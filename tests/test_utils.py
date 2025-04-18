@@ -7,6 +7,7 @@ from utils import (
     determine_sex,
     compute_signature,
     compute_signature_hash,
+    is_negative_control,
 )
 
 
@@ -50,6 +51,14 @@ def test_compute_signature_hash():
     hash_val = compute_signature_hash(row)
     assert isinstance(hash_val, str)
     assert len(hash_val) == 40  # SHA1 hash length
+
+
+def test_is_negative_control_true():
+    assert is_negative_control("temoin_negatif") is True
+
+
+def test_is_negative_control_false():
+    assert is_negative_control("sample1") is False
 
 
 # def test_should_find_negative_control_with_neg_keyword():
