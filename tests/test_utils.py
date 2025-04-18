@@ -11,6 +11,7 @@ from utils import (
     is_negative_control,
     intra_comparison,
     inter_comparison,
+    sample_heatmap,
 )
 
 
@@ -221,6 +222,47 @@ def test_inter_comparison_no_conflict():
     )
     result = inter_comparison(df)
     assert result.empty
+
+
+# ----------------------------
+# Tests for samples heatmap
+# ----------------------------
+
+
+def test_sample_heatmap_percent_id():
+    df = pd.DataFrame(
+        {
+            "Patient": ["A", "B"],
+            "Sample Name": ["A_1", "B_1"],
+            "Allele 1": ["A", "A"],
+            "Allele 2": ["T", "G"],
+            "Allele 29": ["X", "X"],
+            "Allele 30": ["Y", ""],
+            "Genre": ["homme", "femme"],
+        }
+    )
+    heatmap = sample_heatmap(df)
+
+    assert heatmap.shape == (2, 2)
+    assert heatmap.loc["A_1", "A_1"] == 100.0
+    assert heatmap.loc["A_1", "B_1"] < 100
+
+
+def test_heatmap_sex_diff_only():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1", "P2"],
+            "Sample Name": ["P1_A", "P2_A"],
+            "Allele 1": ["A", "A"],
+            "Allele 2": ["T", "T"],
+            "Allele 29": ["X", "X"],
+            "Allele 30": ["Y", ""],  # sexe diff
+            "Genre": ["homme", "femme"],
+        }
+    )
+    heatmap = sample_heatmap(df)
+    diff = heatmap.loc["P1_A", "P2_A"]
+    assert diff < 100
 
 
 # def test_should_find_negative_control_with_neg_keyword():
