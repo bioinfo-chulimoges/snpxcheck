@@ -10,6 +10,7 @@ from utils import (
     compute_signature_hash,
     is_negative_control,
     intra_comparison,
+    inter_comparison,
 )
 
 
@@ -61,6 +62,11 @@ def test_is_negative_control_true():
 
 def test_is_negative_control_false():
     assert is_negative_control("sample1") is False
+
+
+# ----------------------------
+# Tests for intra_comparison function
+# ----------------------------
 
 
 def test_intra_comparison_consistent_group():
@@ -176,6 +182,31 @@ def test_intra_comparison_single_negative():
     result = intra_comparison(df)
     assert all(result["status_type"] == "info")
     assert all("Contrôle négatif" in status for status in result["status_description"])
+
+
+# ----------------------------
+# Tests for inter_comparison function
+# ----------------------------
+
+
+def test_inter_comparison_conflict():
+    df = pd.DataFrame(
+        {
+            "Patient": ["A", "B"],
+            "signature": [("A", "T"), ("A", "T")],
+            "signature_len": [2, 2],
+            "signature": [("A", "C"), ("A", "C")],
+            "signature_hash": ["hash1", "hash2"],
+            "is_neg": [False, False],
+            "Patient": ["patient1", "patient1"],
+            "Genre": ["homme", "femme"],
+            "status_type": ["success", "success"],
+            "status_description": ["", ""],
+        }
+    )
+    result = inter_comparison(df)
+    assert len(result) == 2
+    assert all(r["status_code"] == "error" for r in result)
 
 
 # def test_should_find_negative_control_with_neg_keyword():
