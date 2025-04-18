@@ -6,6 +6,9 @@ ALLELE_PREFIX = "Allele"
 GENDER_ALLELES_X = "Allele 29"
 GENDER_ALLELES_Y = "Allele 30"
 NEGATIVE_KEYWORDS = ["neg", "tem"]
+REQUIRED_COLUMNS = ["Sample File", "Sample Name", "Panel", "Marker", "Dye"] + [
+    f"Allele {i}" for i in range(1, 35 + 1)
+]
 
 
 def load_genemapper_data(file) -> pd.DataFrame:
@@ -26,6 +29,20 @@ def load_genemapper_data(file) -> pd.DataFrame:
         return df
     except Exception as e:
         raise RuntimeError(f"Erreur lors de la lecture du fichier : {e}")
+
+
+def validate_file_format(df: pd.DataFrame) -> list[str]:
+    """
+    Check if the DataFrame has the required columns.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to check.
+
+    Returns:
+        list[str]: List of missing columns. If all required columns are present, returns an empty list.
+    """
+    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    return missing_columns
 
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
