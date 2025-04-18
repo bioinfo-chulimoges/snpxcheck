@@ -5,6 +5,8 @@ import pandas as pd
 from utils import (
     load_genemapper_data,
     determine_sex,
+    compute_signature,
+    compute_signature_hash,
 )
 
 
@@ -35,6 +37,19 @@ def test_determine_sex_female():
 def test_determine_sex_unknown():
     row = pd.Series({"Allele 29": None, "Allele 30": None})
     assert determine_sex(row) == "indéterminé"
+
+
+def test_compute_signature():
+    row = pd.Series({"Allele 1": "A", "Allele 2": "T", "Allele 3": ""})
+    result = compute_signature(row, ["Allele 1", "Allele 2", "Allele 3"])
+    assert result == ("A", "T")
+
+
+def test_compute_signature_hash():
+    row = pd.Series({"signature": ("A", "T", "C")})
+    hash_val = compute_signature_hash(row)
+    assert isinstance(hash_val, str)
+    assert len(hash_val) == 40  # SHA1 hash length
 
 
 # def test_should_find_negative_control_with_neg_keyword():
