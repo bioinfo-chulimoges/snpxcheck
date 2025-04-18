@@ -224,6 +224,23 @@ def test_inter_comparison_no_conflict():
     assert result.empty
 
 
+def test_inter_comparison_multiple_conflict():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1", "P2", "P3"],
+            "signature": [("A", "T", "C"), ("A", "T", "C"), ("A", "T", "G")],
+            "signature_len": [3, 3, 3],
+            "signature_hash": ["hash1", "hash1", "hash2"],
+            "is_neg": [False, False, False],
+            "Genre": ["homme", "homme", "homme"],
+            "status_type": ["success", "success", "success"],
+            "status_description": ["", "", ""],
+        }
+    )
+    result = inter_comparison(df)
+    assert len(result) == 2  # P1 and P2 must be declared as conflict
+
+
 # ----------------------------
 # Tests for samples heatmap
 # ----------------------------
