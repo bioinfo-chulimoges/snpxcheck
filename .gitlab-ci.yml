@@ -30,7 +30,6 @@ test:
     - coverage run -m pytest tests/
     - coverage report
     - coverage xml
-    - cd src/
     - pdoc3 --html --output-dir /tmp/ --skip-errors .
     - cd ..
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
