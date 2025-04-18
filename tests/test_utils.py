@@ -9,6 +9,7 @@ from utils import (
     compute_signature,
     compute_signature_hash,
     is_negative_control,
+    prepare_data,
     intra_comparison,
     inter_comparison,
     sample_heatmap,
@@ -66,6 +67,55 @@ def test_is_negative_control_false():
 
 
 # ----------------------------
+# Tests for samples heatmap
+# ----------------------------
+def test_prepare_data_add_gender():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["sample1", "sample2", "Sample3"],
+            "Allele 1": ["A", "T", "A"],
+            "Allele 2": ["C", "G", "C"],
+            "Allele 29": ["X", "X", ""],
+            "Allele 30": ["Y", "", ""],
+        }
+    )
+    result = prepare_data(df)
+    assert result.loc[0, "Genre"] == "homme"
+    assert result.loc[1, "Genre"] == "femme"
+    assert result.loc[2, "Genre"] == "indéterminé"
+
+
+def test_prepare_data_add_negativ_control():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["temoinnegatif"],
+            "Allele 1": [np.nan],
+            "Allele 2": [np.nan],
+            "Allele 29": [np.nan],
+            "Allele 30": [np.nan],
+        }
+    )
+    result = prepare_data(df)
+    assert result.loc[0, "Genre"] == "indéterminé"
+    assert result.loc[0, "is_neg"]
+
+
+def test_prepare_data_find_patient_id_with_bis_and_ter_suffixes():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["Patient1bis", "Patient1ter"],
+            "Allele 1": ["A", "A"],
+            "Allele 2": ["T", "T"],
+            "Allele 29": ["X", "X"],
+            "Allele 30": ["Y", "Y"],
+        }
+    )
+    result = prepare_data(df)
+    assert result.loc[0, "Patient"] == "Patient1"
+    assert result.loc[1, "Patient"] == "Patient1"
+
+
+# ----------------------------
 # Tests for intra_comparison function
 # ----------------------------
 
@@ -120,7 +170,7 @@ def test_intra_comparison_inconsistent_signature():
     df = pd.DataFrame(
         {
             "Sample Name": ["patient1", "patient1bis"],
-            "Allele 1": ["A", "T"],  # différence
+            "Allele 1": ["A", "T"],  # different alleles
             "Allele 2": ["C", "C"],
             "Allele 29": ["X", "X"],
             "Allele 30": ["Y", "Y"],
