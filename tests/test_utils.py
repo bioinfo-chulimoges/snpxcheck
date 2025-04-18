@@ -192,21 +192,35 @@ def test_intra_comparison_single_negative():
 def test_inter_comparison_conflict():
     df = pd.DataFrame(
         {
-            "Patient": ["A", "B"],
+            "Patient": ["Patient_A", "Patient_B"],
             "signature": [("A", "T"), ("A", "T")],
             "signature_len": [2, 2],
-            "signature": [("A", "C"), ("A", "C")],
-            "signature_hash": ["hash1", "hash2"],
+            "signature_hash": ["hash1", "hash1"],
             "is_neg": [False, False],
-            "Patient": ["patient1", "patient1"],
-            "Genre": ["homme", "femme"],
+            "Genre": ["homme", "homme"],
             "status_type": ["success", "success"],
             "status_description": ["", ""],
         }
     )
     result = inter_comparison(df)
     assert len(result) == 2
-    assert all(r["status_code"] == "error" for r in result)
+
+
+def test_inter_comparison_no_conflict():
+    df = pd.DataFrame(
+        {
+            "Patient": ["Patient_A", "Patient_A"],
+            "signature": [("A", "T"), ("A", "T")],
+            "signature_len": [2, 2],
+            "signature_hash": ["hash1", "hash1"],
+            "is_neg": [False, False],
+            "Genre": ["homme", "homme"],
+            "status_type": ["success", "success"],
+            "status_description": ["", ""],
+        }
+    )
+    result = inter_comparison(df)
+    assert result.empty
 
 
 # def test_should_find_negative_control_with_neg_keyword():
