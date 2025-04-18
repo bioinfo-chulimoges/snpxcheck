@@ -13,6 +13,7 @@ from utils import (
     intra_comparison,
     inter_comparison,
     sample_heatmap,
+    validate_file_format,
 )
 
 
@@ -28,6 +29,39 @@ def test_empty_file():
     file = io.StringIO("")
     with pytest.raises(RuntimeError):
         load_genemapper_data(file)
+
+
+def test_validate_file_format_valid():
+    columns = ["Sample File", "Sample Name", "Panel", "Marker", "Dye"] + [
+        f"Allele {i}" for i in range(1, 36)
+    ]
+    df = pd.DataFrame(columns=columns)
+
+    missing = validate_file_format(df)
+    assert missing == []
+
+
+def test_validate_file_format_missing_few():
+    columns = [
+        "Sample File",
+        "Sample Name",
+        "Panel",
+        "Marker",  # manque "Dye"
+    ] + [
+        f"Allele {i}" for i in range(1, 34)
+    ]  # manque Allele 34, 35
+    df = pd.DataFrame(columns=columns)
+
+    missing = validate_file_format(df)
+    assert "Dye" in missing
+    assert "Allele 34" in missing
+    assert "Allele 35" in missing
+
+
+def test_validate_file_format_empty():
+    df = pd.DataFrame()
+    missing = validate_file_format(df)
+    assert len(missing) == 40  # 5 + 35 allèles
 
 
 def test_determine_sex_male():
