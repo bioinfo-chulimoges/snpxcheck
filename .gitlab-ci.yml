@@ -18,6 +18,7 @@ variables:
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install pytest pytest-cov
+    - pip install --use-pep517 -U pdoc3
 
 # Execute tests and generate coverage reports
 test:
@@ -25,17 +26,21 @@ test:
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
   script:
-    - pytest --cov=utils --cov=app --cov-report=term-missing --cov-report=xml
+    - echo $CI_COMMIT_BRANCH
+    - coverage run -m pytest tests/
+    - coverage report
+    - coverage xml
+    - cd src/
+    - pdoc3 --html --output-dir /tmp/ --skip-errors .
+    - cd ..
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  #  image: python:3.10-bullseye
+  image: continuumio/miniconda3
   artifacts:
-    when: always
     reports:
-      junit: junit.xml
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-    paths:
-      - junit.xml
-      - coverage.xml
   <<: *default_before_script
 
 # deploy the documentation to GitLab Pages
@@ -46,7 +51,6 @@ pages:
   image: continuumio/miniconda3
   allow_failure: false
   script:
-    - pip install --use-pep517 -U pdoc3
     - cd src/
     - pdoc3 --html --output-dir ../public/ --skip-errors .
     - mv ../public/src/* ../public/
