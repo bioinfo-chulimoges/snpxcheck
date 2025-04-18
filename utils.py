@@ -94,10 +94,10 @@ def determine_sex(row: pd.Series) -> str:
 
     x = row.get(GENDER_ALLELES_X)
     y = row.get(GENDER_ALLELES_Y)
-    if x == "X" and y == "Y":
-        return "homme"
-    elif x == "X" and pd.isna(y):
+    if not pd.isna(x) and x == "X" and (pd.isna(y) or y == ""):
         return "femme"
+    elif not pd.isna(x) and x == "X" and not pd.isna(y) and y == "Y":
+        return "homme"
     else:
         return "indéterminé"
 
