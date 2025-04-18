@@ -1,6 +1,7 @@
 import io
 import pytest
 import pandas as pd
+import numpy as np
 
 from utils import (
     load_genemapper_data,
@@ -8,6 +9,7 @@ from utils import (
     compute_signature,
     compute_signature_hash,
     is_negative_control,
+    intra_comparison,
 )
 
 
@@ -59,6 +61,121 @@ def test_is_negative_control_true():
 
 def test_is_negative_control_false():
     assert is_negative_control("sample1") is False
+
+
+def test_intra_comparison_consistent_group():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["patient1", "patient1bis"],
+            "Allele 1": ["A", "A"],
+            "Allele 2": ["T", "T"],
+            "Allele 29": ["X", "X"],
+            "Allele 30": ["Y", "Y"],
+            "signature_len": [2, 2],
+            "signature": [("A", "T"), ("A", "T")],
+            "signature_hash": ["hash1", "hash1"],
+            "is_neg": [False, False],
+            "Patient": ["patient1", "patient1"],
+            "Genre": ["homme", "homme"],
+            "status_type": ["success", "success"],
+            "status_description": ["", ""],
+        }
+    )
+    result = intra_comparison(df)
+    assert len(result) == 2
+    assert all(result["status_type"] == "success")
+
+
+def test_intra_comparison_patient_no_allele_error():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["patient1"],
+            "Allele 1": [""],
+            "Allele 2": [""],
+            "Allele 29": [""],
+            "Allele 30": [""],
+            "signature_len": [0],
+            "signature": [""],
+            "signature_hash": [""],
+            "is_neg": [False],
+            "Patient": ["patient1"],
+            "Genre": ["homme"],
+            "status_type": ["success"],
+            "status_description": [""],
+        }
+    )
+    result = intra_comparison(df)
+    assert len(result) == 1
+    assert all(result["status_type"] == "error")
+
+
+def test_intra_comparison_inconsistent_signature():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["patient1", "patient1bis"],
+            "Allele 1": ["A", "T"],  # différence
+            "Allele 2": ["C", "C"],
+            "Allele 29": ["X", "X"],
+            "Allele 30": ["Y", "Y"],
+            "signature_len": [2, 2],
+            "signature": [("A", "T"), ("T", "C")],
+            "signature_hash": ["hash1", "hash2"],
+            "is_neg": [False, False],
+            "Patient": ["patient1", "patient1"],
+            "Genre": ["homme", "homme"],
+            "status_type": ["success", "success"],
+            "status_description": ["", ""],
+        }
+    )
+    result = intra_comparison(df)
+    assert all(result["status_type"] == "error")
+    assert all("SNPs" in status for status in result["status_description"])
+
+
+def test_intra_comparison_inconsistent_sex():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["patient1", "patient1bis"],
+            "Allele 1": ["A", "A"],
+            "Allele 2": ["C", "C"],
+            "Allele 29": ["X", "X"],
+            "Allele 30": ["Y", ""],  # one men, one women
+            "signature_len": [2, 2],
+            "signature": [("A", "C"), ("A", "C")],
+            "signature_hash": ["hash1", "hash2"],
+            "is_neg": [False, False],
+            "Patient": ["patient1", "patient1"],
+            "Genre": ["homme", "femme"],
+            "status_type": ["success", "success"],
+            "status_description": ["", ""],
+        }
+    )
+    result = intra_comparison(df)
+    assert all(result["status_type"] == "error")
+    assert all("genre" in status for status in result["status_description"])
+
+
+def test_intra_comparison_single_negative():
+    df = pd.DataFrame(
+        {
+            "Sample Name": ["temoinnegatif"],
+            "Allele 1": [np.nan],
+            "Allele 2": [np.nan],
+            "Allele 29": [np.nan],
+            "Allele 30": [np.nan],
+            "signature_len": [0],
+            "signature": [""],
+            "signature_hash": [""],
+            "is_neg": [True],
+            "Patient": ["temoinnegatif"],
+            "Genre": ["indéterminé"],
+            "status_type": ["success"],
+            "status_description": [""],
+        }
+    )
+    result = intra_comparison(df)
+    assert all(result["status_type"] == "info")
+    assert all("Contrôle négatif" in status for status in result["status_description"])
 
 
 # def test_should_find_negative_control_with_neg_keyword():
