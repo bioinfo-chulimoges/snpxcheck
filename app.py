@@ -122,105 +122,118 @@ def create_plotly_heatmap(comparison_matrix):
     return fig
 
 
-# Configure the Streamlit app
-st.set_page_config(
-    page_title="Identitovigilence SNPXPlex",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+def render_app(df: pd.DataFrame):
+    """Render the Streamlit app with the provided DataFrame.
 
+    Args:
+        df (pd.DataFrame): The DataFrame to display.
+    """
+    data = utils.prepare_data(df)
 
-with st.sidebar:
+    # Intra-patient Comparison
+    df_intra = utils.intra_comparison(data)
 
-    st.subheader("Identitovigilance - contrôle d'extraction", divider="rainbow")
-    # Genemapper file uploader
-    genemapper_file = st.file_uploader(
-        "Insérer les donnés patients :",
-        type=["txt", "csv"],
-    )
+    # count samples with errors
+    error_count = df_intra["status_type"].value_counts().get("error", 0)
 
-    interpreter = st.text_input("Interprétateur :", "")
-    extraction_week = st.text_input("Semaine d'extraction :", "")
-    comment = st.text_area("Commentaire :", "")
-    option = st.selectbox(
-        "Série validée ?",
-        ("Oui", "Non"),
-        index=None,
-        placeholder="",
-    )
-
-    st.button("Générer un rapport", type="primary")
-
-if genemapper_file is not None:
-    df = read_file(genemapper_file)
-    if df is not None:
-
-        # df_intra, df_inter, comparison_matrix = utils2.analyze_samples(df)
-
-        data = utils.prepare_data(df)
-
-        # Intra-patient Comparison
-
-        df_intra = utils.intra_comparison(data)
-
-        # count samples with errors
-        error_count = df_intra["status_type"].value_counts().get("error", 0)
-
-        # Reorder columns
-        alleles_columns = [
-            str(col) for col in df_intra.columns if col.startswith("Allele")
+    # Reorder columns
+    alleles_columns = [str(col) for col in df_intra.columns if col.startswith("Allele")]
+    intra_column_order = (
+        [
+            "Patient",
+            "Sample Name",
+            "Genre",
+            "status_description",
         ]
-        intra_column_order = (
-            [
-                "Patient",
-                "Sample Name",
-                "Genre",
-                "status_description",
-            ]
-            + alleles_columns
-            + ["status_type"]
+        + alleles_columns
+        + ["status_type"]
+    )
+    df_display = df_intra[intra_column_order]
+
+    # Highlight the rows based on status_type
+    styled_df = df_display.style.apply(highlight_status, axis=1)
+
+    st.subheader("Comparaison intra-patient", divider="grey")
+    if error_count > 0:
+        st.error(f"Erreur : {error_count} échantillon(s) incohérent(s) détecté(s).")
+    else:
+        st.success("Tous les échantillons sont cohérents.")
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+    # Inter-Patient Comparison
+    df_inter = utils.intra_comparison(data)
+    inter_column_order = (
+        [
+            "Patient",
+            "Sample Name",
+            "Genre",
+        ]
+        + alleles_columns
+        + ["signature_hash"]
+    )
+    df_display = df_inter[inter_column_order]
+    df_display = insert_blank_rows_between_groups(df_display, "signature_hash")
+
+    st.subheader("Comparaison inter-patient", divider="grey")
+    if df_inter.empty:
+        st.success("Tous les échantillons sont cohérents.")
+    else:
+        st.error("Incohérence(s) détectée(s) entre les échantillons.")
+    st.dataframe(df_display, use_container_width=True, hide_index=True)
+
+    # Plot the heatmap
+    comparison_matrix = utils.sample_heatmap(data)
+    st.subheader(
+        "Matrice de comparaison des patients (% allèles en commun) :",
+        divider="grey",
+    )
+    if not comparison_matrix.empty:
+        fig = create_plotly_heatmap(comparison_matrix)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("Aucune donnée à afficher.")
+
+
+def main():
+    # Configure the Streamlit app
+    st.set_page_config(
+        page_title="Identitovigilence SNPXPlex",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+
+    with st.sidebar:
+
+        st.subheader("Identitovigilance - contrôle d'extraction", divider="rainbow")
+        # Genemapper file uploader
+        genemapper_file = st.file_uploader(
+            "Insérer les donnés patients :",
+            type=["txt", "csv"],
         )
-        df_display = df_intra[intra_column_order]
 
-        # Highlight the rows based on status_type
-        styled_df = df_display.style.apply(highlight_status, axis=1)
-
-        st.subheader("Comparaison intra-patient", divider="grey")
-        if error_count > 0:
-            st.error(f"Erreur : {error_count} échantillon(s) incohérent(s) détecté(s).")
-        else:
-            st.success("Tous les échantillons sont cohérents.")
-        st.dataframe(styled_df, use_container_width=True, hide_index=True)
-
-        # Inter-Patient Comparison
-        df_inter = utils.intra_comparison(data)
-        inter_column_order = (
-            [
-                "Patient",
-                "Sample Name",
-                "Genre",
-            ]
-            + alleles_columns
-            + ["signature_hash"]
+        interpreter = st.text_input("Interprétateur :", "")
+        extraction_week = st.text_input("Semaine d'extraction :", "")
+        comment = st.text_area("Commentaire :", "")
+        option = st.selectbox(
+            "Série validée ?",
+            ("Oui", "Non"),
+            index=None,
+            placeholder="",
         )
-        df_display = df_inter[inter_column_order]
-        df_display = insert_blank_rows_between_groups(df_display, "signature_hash")
 
-        st.subheader("Comparaison inter-patient", divider="grey")
-        if df_inter.empty:
-            st.success("Tous les échantillons sont cohérents.")
-        else:
-            st.error("Incohérence(s) détectée(s) entre les échantillons.")
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
+        st.button("Générer un rapport", type="primary")
 
-        # Plot the heatmap
-        comparison_matrix = utils.sample_heatmap(data)
-        st.subheader(
-            "Matrice de comparaison des patients (% allèles en commun) :",
-            divider="grey",
-        )
-        if not comparison_matrix.empty:
-            fig = create_plotly_heatmap(comparison_matrix)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("Aucune donnée à afficher.")
+    if genemapper_file is not None:
+        df = read_file(genemapper_file)
+        if df is not None:
+            missing_colmuns = utils.validate_file_format(df)
+            if missing_colmuns:
+                st.error(
+                    f"Le fichier ne semble pas au bon format.\n\nColonnes manquantes : {missing_colmuns}"
+                )
+            else:
+                render_app(df)
+
+
+if __name__ == "__main__":
+    main()

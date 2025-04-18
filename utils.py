@@ -6,6 +6,9 @@ ALLELE_PREFIX = "Allele"
 GENDER_ALLELES_X = "Allele 29"
 GENDER_ALLELES_Y = "Allele 30"
 NEGATIVE_KEYWORDS = ["neg", "tem"]
+REQUIRED_COLUMNS = ["Sample File", "Sample Name", "Panel", "Marker", "Dye"] + [
+    f"Allele {i}" for i in range(1, 35 + 1)
+]
 
 
 def load_genemapper_data(file) -> pd.DataFrame:
@@ -26,6 +29,20 @@ def load_genemapper_data(file) -> pd.DataFrame:
         return df
     except Exception as e:
         raise RuntimeError(f"Erreur lors de la lecture du fichier : {e}")
+
+
+def validate_file_format(df: pd.DataFrame) -> list[str]:
+    """
+    Check if the DataFrame has the required columns.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to check.
+
+    Returns:
+        list[str]: List of missing columns. If all required columns are present, returns an empty list.
+    """
+    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    return missing_columns
 
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -94,10 +111,10 @@ def determine_sex(row: pd.Series) -> str:
 
     x = row.get(GENDER_ALLELES_X)
     y = row.get(GENDER_ALLELES_Y)
-    if x == "X" and y == "Y":
-        return "homme"
-    elif x == "X" and pd.isna(y):
+    if not pd.isna(x) and x == "X" and (pd.isna(y) or y == ""):
         return "femme"
+    elif not pd.isna(x) and x == "X" and not pd.isna(y) and y == "Y":
+        return "homme"
     else:
         return "indéterminé"
 
@@ -158,23 +175,29 @@ def intra_comparison(df: pd.DataFrame) -> pd.DataFrame:
 
     # When no alleles are found, the signature is empty
     mask_no_alleles = df["signature_len"] == 0
-    df.loc[mask_no_alleles & df["is_neg"], "status"] = "controle négatif"
-    df.loc[mask_no_alleles & ~df["is_neg"], "status"] = "no alleles found"
+    # df.loc[mask_no_alleles & df["is_neg"], "status_type"] = "info"
+    # df.loc[mask_no_alleles & df["is_neg"], "status_description"] = "controle négatif"
+    df.loc[mask_no_alleles & ~df["is_neg"], "status_type"] = "error"
+    df.loc[mask_no_alleles & ~df["is_neg"], "status_description"] = "no alleles found"
 
     # Compare the signatures of each group of patients
     for pid, group in df.groupby("Patient"):
         if len(group) == 1 and not group["is_neg"].iloc[0]:
-            df.loc[group.index, "status_type"] = "warning"
-            df.loc[group.index, "status_description"] = "Echantillon unique"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "warning"
+                df.loc[group.index, "status_description"] = "Echantillon unique"
         elif len(group) == 1 and group["is_neg"].iloc[0]:
-            df.loc[group.index, "status_type"] = "info"
-            df.loc[group.index, "status_description"] = "Contrôle négatif"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "info"
+                df.loc[group.index, "status_description"] = "Contrôle négatif"
         elif group["signature"].nunique() > 1:
-            df.loc[group.index, "status_type"] = "error"
-            df.loc[group.index, "status_description"] = "Incohérente de SNPs"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "error"
+                df.loc[group.index, "status_description"] = "Incohérente de SNPs"
         elif group["Genre"].nunique() > 1:
-            df.loc[group.index, "status_type"] = "error"
-            df.loc[group.index, "status_description"] = "Incohérence de genre"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "error"
+                df.loc[group.index, "status_description"] = "Incohérence de genre"
 
     # remove unused columns
     df.drop(columns=["signature", "signature_len", "is_neg"], inplace=True)

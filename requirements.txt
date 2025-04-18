@@ -1,2 +1,6 @@
-streamlit
+pandas~=2.2
+numpy~=1.26
+streamlit~=1.44
+plotly~=6.0
+natsort~=8.4
 pytest
