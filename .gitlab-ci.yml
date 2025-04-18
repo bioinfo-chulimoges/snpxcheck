@@ -43,10 +43,10 @@ pages:
   stage: deploy
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
-  needs: [tests]
   image: continuumio/miniconda3
   allow_failure: false
   script:
+    - pip install --use-pep517 -U pdoc3
     - cd src/
     - pdoc3 --html --output-dir ../public/ --skip-errors .
     - mv ../public/src/* ../public/
