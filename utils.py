@@ -158,23 +158,29 @@ def intra_comparison(df: pd.DataFrame) -> pd.DataFrame:
 
     # When no alleles are found, the signature is empty
     mask_no_alleles = df["signature_len"] == 0
-    df.loc[mask_no_alleles & df["is_neg"], "status"] = "controle négatif"
-    df.loc[mask_no_alleles & ~df["is_neg"], "status"] = "no alleles found"
+    # df.loc[mask_no_alleles & df["is_neg"], "status_type"] = "info"
+    # df.loc[mask_no_alleles & df["is_neg"], "status_description"] = "controle négatif"
+    df.loc[mask_no_alleles & ~df["is_neg"], "status_type"] = "error"
+    df.loc[mask_no_alleles & ~df["is_neg"], "status_description"] = "no alleles found"
 
     # Compare the signatures of each group of patients
     for pid, group in df.groupby("Patient"):
         if len(group) == 1 and not group["is_neg"].iloc[0]:
-            df.loc[group.index, "status_type"] = "warning"
-            df.loc[group.index, "status_description"] = "Echantillon unique"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "warning"
+                df.loc[group.index, "status_description"] = "Echantillon unique"
         elif len(group) == 1 and group["is_neg"].iloc[0]:
-            df.loc[group.index, "status_type"] = "info"
-            df.loc[group.index, "status_description"] = "Contrôle négatif"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "info"
+                df.loc[group.index, "status_description"] = "Contrôle négatif"
         elif group["signature"].nunique() > 1:
-            df.loc[group.index, "status_type"] = "error"
-            df.loc[group.index, "status_description"] = "Incohérente de SNPs"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "error"
+                df.loc[group.index, "status_description"] = "Incohérente de SNPs"
         elif group["Genre"].nunique() > 1:
-            df.loc[group.index, "status_type"] = "error"
-            df.loc[group.index, "status_description"] = "Incohérence de genre"
+            if df.loc[group.index, "status_type"].unique() == "success":
+                df.loc[group.index, "status_type"] = "error"
+                df.loc[group.index, "status_description"] = "Incohérence de genre"
 
     # remove unused columns
     df.drop(columns=["signature", "signature_len", "is_neg"], inplace=True)
