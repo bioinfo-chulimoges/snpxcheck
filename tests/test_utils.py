@@ -14,6 +14,7 @@ from utils import (
     inter_comparison,
     sample_heatmap,
     validate_file_format,
+    merge_genotypes,
 )
 
 
@@ -48,20 +49,20 @@ def test_validate_file_format_missing_few():
         "Panel",
         "Marker",  # manque "Dye"
     ] + [
-        f"Allele {i}" for i in range(1, 34)
-    ]  # manque Allele 34, 35
+        f"Allele {i}" for i in range(1, 33)
+    ]  # manque Allele 33, 34
     df = pd.DataFrame(columns=columns)
 
     missing = validate_file_format(df)
     assert "Dye" in missing
+    assert "Allele 33" in missing
     assert "Allele 34" in missing
-    assert "Allele 35" in missing
 
 
 def test_validate_file_format_empty():
     df = pd.DataFrame()
     missing = validate_file_format(df)
-    assert len(missing) == 40  # 5 + 35 allèles
+    assert len(missing) == 39  # 5 + 34 allèles
 
 
 def test_determine_sex_male():
@@ -98,6 +99,88 @@ def test_is_negative_control_true():
 
 def test_is_negative_control_false():
     assert is_negative_control("sample1") is False
+
+
+# ----------------------------
+# Tests for grouping genotypes
+# ----------------------------
+
+
+def test_merge_basic_cases():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1", "P2", "P3", "P4", "P5"],
+            "Sample Name": ["S1", "S2", "S3", "S4", "S5"],
+            "Allele 1": ["01_T", "01_T", "", "01_T", "01_C"],
+            "Allele 2": ["", "01_T", "01_T", "01_C", "01_T"],
+        }
+    )
+
+    result = merge_genotypes(df)
+    expected = pd.Series(["T", "T", "T", "T/C", "C/T"], name="Locus 1")
+
+    assert "Locus 1" in result.columns
+    pd.testing.assert_series_equal(result["Locus 1"], expected)
+
+
+def test_merge_all_empty():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1"],
+            "Sample Name": ["S1"],
+            "Allele 1": [""],
+            "Allele 2": [""],
+        }
+    )
+
+    result = merge_genotypes(df)
+    assert result["Locus 1"].iloc[0] == ""
+
+
+def test_merge_same_alleles():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1"],
+            "Sample Name": ["S1"],
+            "Allele 1": ["03_A"],
+            "Allele 2": ["03_A"],
+        }
+    )
+
+    result = merge_genotypes(df)
+    assert result["Locus 1"].iloc[0] == "A"
+
+
+def test_merge_nan_handling():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1"],
+            "Sample Name": ["S1"],
+            "Allele 1": [float("nan")],
+            "Allele 2": ["01_T"],
+        }
+    )
+
+    result = merge_genotypes(df)
+    assert result["Locus 1"].iloc[0] == "T"
+
+
+def test_merge_multiple_loci():
+    df = pd.DataFrame(
+        {
+            "Patient": ["P1"],
+            "Sample Name": ["S1"],
+            "Allele 1": ["01_C"],
+            "Allele 2": ["01_T"],
+            "Allele 3": ["02_C"],
+            "Allele 4": ["02_C"],
+        }
+    )
+
+    result = merge_genotypes(df)
+
+    assert result["Locus 1"].iloc[0] == "C/T"
+    assert result["Locus 2"].iloc[0] == "C"
 
 
 # ----------------------------
@@ -175,29 +258,6 @@ def test_intra_comparison_consistent_group():
     result = intra_comparison(df)
     assert len(result) == 2
     assert all(result["status_type"] == "success")
-
-
-def test_intra_comparison_patient_no_allele_error():
-    df = pd.DataFrame(
-        {
-            "Sample Name": ["patient1"],
-            "Allele 1": [""],
-            "Allele 2": [""],
-            "Allele 29": [""],
-            "Allele 30": [""],
-            "signature_len": [0],
-            "signature": [""],
-            "signature_hash": [""],
-            "is_neg": [False],
-            "Patient": ["patient1"],
-            "Genre": ["homme"],
-            "status_type": ["success"],
-            "status_description": [""],
-        }
-    )
-    result = intra_comparison(df)
-    assert len(result) == 1
-    assert all(result["status_type"] == "error")
 
 
 def test_intra_comparison_inconsistent_signature():

@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import utils
-import plotly.express as px
+import plotly
 import numpy as np
+import tempfile
 from natsort import natsorted
 
 
@@ -93,32 +94,64 @@ def create_plotly_heatmap(comparison_matrix):
         np.tril(np.ones(comparison_matrix.shape)).astype(bool)
     )
 
-    # Create the heatmap
-    fig = px.imshow(
-        masked_matrix,
-        text_auto=False,  # disable text in cells
-        color_continuous_scale=px.colors.sequential.Viridis.reverse(),  # green to blue
-        zmin=0,
-        zmax=100,
-        aspect="equal",  # square cells
-    )
+    n = len(sorted_patients) / 2  # nombre d'échantillons
 
-    # Améliorer le survol (hover) pour afficher le score
-    fig.update_traces(
-        hovertemplate="Patient 1: %{y}<br>Patient 2: %{x}<br>Identité: %{z:.2f%}%<extra></extra>"
-    )
+    # Taille dynamique : chaque case fait environ 30 pixels
+    cell_size = 30
+    fig_size = n * cell_size
 
-    # Optionnel : layout propre
+    fig = plotly.graph_objects.Figure(
+        data=plotly.graph_objects.Heatmap(
+            z=masked_matrix.values,
+            x=masked_matrix.columns,
+            y=masked_matrix.index,
+            colorscale=plotly.colors.sequential.Viridis.reverse(),  # ou 'Cividis', 'Inferno', etc.
+            coloraxis="coloraxis",
+            zmin=0,
+            zmax=100,
+            hovertemplate=(
+                "<b>Patient 1:</b> %{y}<br>"
+                "<b>Patient 2:</b> %{x}<br>"
+                "<b>Identité:</b> %{z:.2f}<extra>%</extra>"
+            ),
+        )
+    )
     fig.update_layout(
-        title="",
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False),
         xaxis_title=None,
         yaxis_title=None,
-        width=1200,
-        height=1200,
+        width=fig_size,
+        height=fig_size,
+        template="plotly_white",
+        xaxis_scaleanchor="y",  # squared tiles
+        xaxis_side="bottom",
+        coloraxis=dict(
+            colorbar=dict(
+                title="Identité (%)",
+                lenmode="fraction",
+                len=0.8,
+                yanchor="middle",
+                y=0.5,
+            )
+        ),
         margin=dict(t=0, b=10, l=10, r=10),
     )
+
+    fig.update_xaxes(
+        tickmode="array",
+        tickvals=list(masked_matrix.columns),
+        ticktext=list(masked_matrix.columns),
+        # tickangle=45,
+    )
+
+    fig.update_yaxes(
+        tickmode="array",
+        tickvals=list(masked_matrix.index),
+        ticktext=list(masked_matrix.index),
+        autorange="reversed",
+    )
+
     return fig
 
 
@@ -132,12 +165,14 @@ def render_app(df: pd.DataFrame):
 
     # Intra-patient Comparison
     df_intra = utils.intra_comparison(data)
-
+    df_intra = utils.merge_genotypes(df_intra)
+    print(df_intra)
     # count samples with errors
     error_count = df_intra["status_type"].value_counts().get("error", 0)
+    st.session_state["errors_intra"] = error_count
 
     # Reorder columns
-    alleles_columns = [str(col) for col in df_intra.columns if col.startswith("Allele")]
+    alleles_columns = [str(col) for col in df_intra.columns if col.startswith("Locus")]
     intra_column_order = (
         [
             "Patient",
@@ -160,26 +195,42 @@ def render_app(df: pd.DataFrame):
         st.success("Tous les échantillons sont cohérents.")
     st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
-    # Inter-Patient Comparison
-    df_inter = utils.intra_comparison(data)
-    inter_column_order = (
-        [
-            "Patient",
-            "Sample Name",
-            "Genre",
-        ]
-        + alleles_columns
-        + ["signature_hash"]
+    # Copy the dataframe for the pdf report
+    df_intra_report = df_display[
+        ["Patient", "Sample Name", "Genre", "status_description", "status_type"]
+    ].copy()
+    df_intra_report = df_intra_report.style.apply(highlight_status, axis=1).hide(
+        axis="index"
     )
-    df_display = df_inter[inter_column_order]
-    df_display = insert_blank_rows_between_groups(df_display, "signature_hash")
+    st.session_state["df_intra"] = df_intra_report
+
+    # Inter-Patient Comparison
+    df_inter = utils.inter_comparison(data)
 
     st.subheader("Comparaison inter-patient", divider="grey")
     if df_inter.empty:
         st.success("Tous les échantillons sont cohérents.")
     else:
+        df_inter = utils.merge_genotypes(df_inter)
+        locus_columns = [
+            str(col) for col in df_inter.columns if col.startswith("Locus")
+        ]
+        inter_column_order = (
+            [
+                "Patient",
+                "Sample Name",
+                "Genre",
+            ]
+            + locus_columns
+            + ["signature_hash"]
+        )
+        df_display = df_inter[inter_column_order]
+        df_display = insert_blank_rows_between_groups(df_display, "signature_hash")
         st.error("Incohérence(s) détectée(s) entre les échantillons.")
-    st.dataframe(df_display, use_container_width=True, hide_index=True)
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
+
+    st.session_state["df_inter"] = df_inter
+    st.session_state["errors_inter"] = len(df_inter)
 
     # Plot the heatmap
     comparison_matrix = utils.sample_heatmap(data)
@@ -189,7 +240,9 @@ def render_app(df: pd.DataFrame):
     )
     if not comparison_matrix.empty:
         fig = create_plotly_heatmap(comparison_matrix)
+        fig.update_traces(colorscale="Viridis")
         st.plotly_chart(fig, use_container_width=True)
+        st.session_state["heatmap"] = fig
     else:
         st.warning("Aucune donnée à afficher.")
 
@@ -214,14 +267,53 @@ def main():
         interpreter = st.text_input("Interprétateur :", "")
         extraction_week = st.text_input("Semaine d'extraction :", "")
         comment = st.text_area("Commentaire :", "")
-        option = st.selectbox(
+        serie = st.selectbox(
             "Série validée ?",
             ("Oui", "Non"),
             index=None,
             placeholder="",
         )
+        st.session_state["metadata"] = {
+            "interpreter": interpreter,
+            "week": extraction_week,
+            "comment": comment,
+            "serie": serie,
+        }
 
-        st.button("Générer un rapport", type="primary")
+        if st.button("Générer un rapport PDF"):
+            with st.spinner("Génération du rapport..."):
+                fig = st.session_state.get("heatmap")
+                df_intra = st.session_state.get("df_intra")
+                df_inter = st.session_state.get("df_inter")
+                metadata = st.session_state.get("metadata", {})
+                errors_intra = st.session_state.get("errors_intra", 0)
+                errors_inter = st.session_state.get("errors_inter", 0)
+
+                if fig and df_intra is not None and df_inter is not None:
+                    heatmap_path = utils.save_heatmap_as_image(fig)
+                    heatmap_path = f"file://{heatmap_path}"
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, suffix=".pdf"
+                    ) as pdf_file:
+                        utils.generate_pdf_report_custom(
+                            df_intra=df_intra,
+                            df_inter=df_inter,
+                            figure_path=heatmap_path,
+                            metadata=metadata,
+                            errors_intra=errors_intra,
+                            errors_inter=errors_inter,
+                            output_path=pdf_file.name,
+                        )
+                        with open(pdf_file.name, "rb") as f:
+                            st.download_button(
+                                "Télécharger le rapport PDF",
+                                f,
+                                file_name="rapport_identitovigilance.pdf",
+                            )
+                else:
+                    st.error(
+                        "Aucune donnée ou graphique disponible pour générer le rapport."
+                    )
 
     if genemapper_file is not None:
         df = read_file(genemapper_file)

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rapport identitovigilance</title>
+    <link rel="stylesheet" href="templates/styles.css" />
+  </head>
+
+  <body>
+    <div class="text-center">
+      <h1>Rapport identitovigilance</h1>
+      <h2>Laboratoire de Biochimie - Génétique Moléculaire</h2>
+    </div>
+
+    <hr />
+
+    <p>Interprété par : <strong>{{ interpreter }}</strong></p>
+    <p>Extraction : <strong>{{ week }}</strong></p>
+    <p>Série validée : <strong>{{ serie }}</strong></p>
+    <p>Commentaire : <strong>{{ comment }}</strong></p>
+
+    <hr />
+
+    <h2>Comparaison Intra-Patients</h2>
+    {% if errors_intra > 0 %}
+    <div class="error">
+      Erreur : {{errors_intra}} échantillon(s) incohérent(s) détecté(s).
+    </div>
+    {% else %}
+    <div class="success">Tous les échantillons sont cohérents.</div>
+    {% endif %} {{ df_intra | safe }}
+
+    <h2>Comparaison Inter-Patients</h2>
+    {% if errors_inter > 0 %}
+    <div class="error">Incohérence(s) détectée(s) entre les échantillons.</div>
+    {% else %}
+    <div class="success">Tous les échantillons sont cohérents.</div>
+    {% endif %} {{ df_inter | safe }} {% if heatmap_path %}
+    <h2>Heatmap</h2>
+    <img class="heatmap" src="{{ heatmap_path }}" />
+    {% endif %}
+  </body>
+</html>

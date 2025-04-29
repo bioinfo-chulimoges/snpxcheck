@@ -1,13 +1,18 @@
 import pandas as pd
 import numpy as np
+import plotly
+import tempfile
 from hashlib import sha1
+from weasyprint import HTML, CSS
+from jinja2 import Environment, FileSystemLoader
+
 
 ALLELE_PREFIX = "Allele"
 GENDER_ALLELES_X = "Allele 29"
 GENDER_ALLELES_Y = "Allele 30"
 NEGATIVE_KEYWORDS = ["neg", "tem"]
 REQUIRED_COLUMNS = ["Sample File", "Sample Name", "Panel", "Marker", "Dye"] + [
-    f"Allele {i}" for i in range(1, 35 + 1)
+    f"Allele {i}" for i in range(1, 34 + 1)
 ]
 
 
@@ -95,6 +100,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     # Define default values for status_type and status_description
     df["status_type"] = "success"  # Valeur par défaut
     df["status_description"] = ""  # Valeur par défaut
+
     return df
 
 
@@ -173,13 +179,6 @@ def intra_comparison(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    # When no alleles are found, the signature is empty
-    mask_no_alleles = df["signature_len"] == 0
-    # df.loc[mask_no_alleles & df["is_neg"], "status_type"] = "info"
-    # df.loc[mask_no_alleles & df["is_neg"], "status_description"] = "controle négatif"
-    df.loc[mask_no_alleles & ~df["is_neg"], "status_type"] = "error"
-    df.loc[mask_no_alleles & ~df["is_neg"], "status_description"] = "no alleles found"
-
     # Compare the signatures of each group of patients
     for pid, group in df.groupby("Patient"):
         if len(group) == 1 and not group["is_neg"].iloc[0]:
@@ -187,7 +186,12 @@ def intra_comparison(df: pd.DataFrame) -> pd.DataFrame:
                 df.loc[group.index, "status_type"] = "warning"
                 df.loc[group.index, "status_description"] = "Echantillon unique"
         elif len(group) == 1 and group["is_neg"].iloc[0]:
-            if df.loc[group.index, "status_type"].unique() == "success":
+            if df.loc[group.index, "signature_len"].any() > 0:
+                df.loc[group.index, "status_type"] = "error"
+                df.loc[group.index, "status_description"] = (
+                    "Contrôle négatif avec alleles"
+                )
+            elif df.loc[group.index, "status_type"].unique() == "success":
                 df.loc[group.index, "status_type"] = "info"
                 df.loc[group.index, "status_description"] = "Contrôle négatif"
         elif group["signature"].nunique() > 1:
@@ -237,6 +241,49 @@ def inter_comparison(df: pd.DataFrame) -> pd.DataFrame:
         return inconsistent_df
     else:
         return pd.DataFrame()
+
+
+def merge_genotypes(df):
+    """
+    Group the columns of alleles 2 by 2 into a single genotype per locus.
+
+    Args:
+        df (pd.DataFrame) : DataFrame with the columns Allele 1, Allele 2, ...
+
+    Returns:
+        pd.DataFrame : Simplified DataFrame with the columns Locus 1, Locus 2, ...
+    """
+
+    # Keep the not alleles columns
+    keeping_cols = [col for col in df.columns if not col.startswith(ALLELE_PREFIX)]
+    merged_data = df[keeping_cols].copy()
+
+    # Get the alleles columns
+    allele_cols = [col for col in df.columns if col.startswith(ALLELE_PREFIX)]
+
+    # Group by pairs the allele columns
+    pairs = [
+        (allele_cols[i], allele_cols[i + 1]) for i in range(0, len(allele_cols) - 1, 2)
+    ]
+
+    for idx, (a1, a2) in enumerate(pairs, start=1):
+
+        def combine(row):
+            val1 = str(row[a1]).strip().split("_")[-1].replace("nan", "")
+            val2 = str(row[a2]).strip().split("_")[-1].replace("nan", "")
+            if not val1 and not val2:
+                return ""
+            if val1 and not val2:
+                return val1
+            if not val1 and val2:
+                return val2
+            if val1 == val2:
+                return val1
+            return f"{val1}/{val2}"
+
+        merged_data[f"Locus {idx}"] = df.apply(combine, axis=1)
+
+    return merged_data
 
 
 def sample_heatmap(df: pd.DataFrame) -> pd.DataFrame:
@@ -297,3 +344,61 @@ def sample_heatmap(df: pd.DataFrame) -> pd.DataFrame:
             comparison_matrix.loc[patient_1, patient_2] = identity_percentage
 
     return comparison_matrix
+
+
+def save_heatmap_as_image(fig: plotly.graph_objects.Figure) -> str:
+    """
+    Save a Plotly figure to a png image
+
+    Args:
+        fig (plotly.graph_objects.Figure): The plotly figure to save
+
+    Returns:
+        str : path to the temporary image file
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+        fig.write_image(tmpfile.name, width=1200, height=1200)
+        return tmpfile.name
+
+
+def generate_html_report(
+    df_intra, df_inter, fig_path, metadata, errors_intra, errors_inter
+):
+    """
+    Generate a HTML to be converted in PDF with jinja2
+    """
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template("report_template.html")
+
+    html = template.render(
+        interpreter=metadata.get("interpreter", ""),
+        week=metadata.get("week", ""),
+        serie=metadata.get("serie", ""),
+        comment=metadata.get("comment", ""),
+        df_intra=df_intra.to_html(
+            classes="table",
+        ),
+        df_inter=df_inter.to_html(classes="table", index=False),
+        heatmap_path=fig_path,
+        errors_intra=errors_intra,
+        errors_inter=errors_inter,
+    )
+    return html
+
+
+def save_pdf_from_html(html_content, output_path):
+    """Convert the html to a pdf file"""
+    with open("test.html", "w") as o:
+        o.write(html_content)
+    HTML(string=html_content).write_pdf(
+        output_path, stylesheets=[CSS("templates/styles.css")]
+    )
+
+
+def generate_pdf_report_custom(
+    df_intra, df_inter, figure_path, metadata, errors_intra, errors_inter, output_path
+):
+    html = generate_html_report(
+        df_intra, df_inter, figure_path, metadata, errors_intra, errors_inter
+    )
+    save_pdf_from_html(html, output_path)
