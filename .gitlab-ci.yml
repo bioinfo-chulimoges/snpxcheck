@@ -15,10 +15,21 @@ variables:
 
 .default_before_script: &default_before_script
   before_script:
-    - apt update && apt install -y \
+    - apt-get update && apt-get install -y \
+      build-essential \
+      libcairo2 \
+      libcairo2-dev \
       libpango-1.0-0 \
-      libpangoft2-1.0-0 \
-      libharfbuzz-subset0
+      libpangocairo-1.0-0 \
+      libgdk-pixbuf2.0-0 \
+      libffi-dev \
+      libxml2 \
+      libxml2-dev \
+      libxslt1-dev \
+      libjpeg-dev \
+      zlib1g-dev \
+      shared-mime-info \
+      fonts-liberation
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install pytest pytest-cov
