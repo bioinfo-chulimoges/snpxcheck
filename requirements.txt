@@ -1,7 +1,10 @@
-pandas~=2.2
-numpy~=1.26
-streamlit~=1.44
-plotly~=6.0
+streamlit==1.32.0
+pandas==2.2.0
+numpy==1.26.3
+plotly==5.18.0
+reportlab==4.1.0
+python-docx==1.1.0
+openpyxl==3.1.2
 kaleido>=0.2.1
 natsort~=8.4
 weasyprint~=65.1

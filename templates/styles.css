@@ -1,18 +1,30 @@
 /* === Global style === */
 body {
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 11px;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
     line-height: 1.4;
     color: #333;
     background: white;
-    margin: 0.5cm;
+    margin: 20px;
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
-    margin-top: 1.2em;
+    margin-top: 0.8em;
     margin-bottom: 0.5em;
     color: #222;
+}
+
+h1 {
+    font-size: 16pt;
+    border-bottom: 2px solid #333;
+    padding-bottom: 5px;
+}
+
+h2 {
+    font-size: 14pt;
+    /* border-bottom: 1px solid #ddd; */
+    padding-bottom: 5px;
 }
 
 p {
@@ -69,7 +81,7 @@ img.heatmap {
 @page {
     size: A4;
     margin: 0.5cm;
-    @bottom-center {
+    @bottom-right {
         content: "Page " counter(page) " / " counter(pages);
         font-size: 9px;
         color: #666;
@@ -106,28 +118,26 @@ footer {
 .info {
     color: #00529B;
     background-color: #BDE5F8;
-    background-image: url('img/info.png');
 }
 .success {
-    color: #4F8A10;
-    background-color: #DFF2BF;
-    background-image: url('img/success.png');
+    color: green;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 .warning {
     color: #9F6000;
     background-color: #FEEFB3;
-    background-image: url('img/warning.png');
 }
-.error{
-    color: #D8000C;
-    background-color: #FFBABA;
-    background-image: url('img/error.png');
+.error {
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 .validation{
     color: #D63301;
     background-color: #FFCCBA;
-    background-image: url('img/validation.png');
 }
+
 /* === Image style === */
 img.heatmap {
     display: block;
@@ -141,5 +151,69 @@ img.heatmap {
     display: block;
     margin: 2em auto;
     max-width: 90%;
+    height: auto;
+}
+
+/* Table styles */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7pt;
+    table-layout: auto;
+}
+
+.table th, .table td {
+    padding: 2px;
+    border: 1px solid #ddd;
+    text-align: left;
+    word-wrap: break-word;
+}
+
+.table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+/* Specific column widths */
+.table th:nth-child(1), .table td:nth-child(1) {  /* Patient */
+    width: 10%;
+}
+
+
+/* Locus columns */
+.table th[colspan], .table td[colspan] {
+    width: auto;
+    min-width: 5%;
+}
+
+/* Container styles */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+}
+
+/* Metadata styles */
+.metadata {
+    font-size: 9pt;
+    padding: 5px 0;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+}
+
+.metadata p {
+    margin: 2px 0;
+}
+
+/* Heatmap styles */
+.heatmap-container {
+    text-align: center;
+    margin: 20px 0;
+    page-break-inside: avoid;
+}
+
+.heatmap-container img {
+    max-width: 100%;
     height: auto;
 }

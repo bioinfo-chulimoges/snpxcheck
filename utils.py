@@ -5,15 +5,16 @@ import tempfile
 from hashlib import sha1
 from weasyprint import HTML, CSS
 from jinja2 import Environment, FileSystemLoader
+from data_processing import DataProcessor
+from genetics import GeneticAnalyzer
+from reporting import ReportGenerator
+from constants import REQUIRED_COLUMNS
 
 
 ALLELE_PREFIX = "Allele"
 GENDER_ALLELES_X = "Allele 29"
 GENDER_ALLELES_Y = "Allele 30"
 NEGATIVE_KEYWORDS = ["neg", "tem"]
-REQUIRED_COLUMNS = ["Sample File", "Sample Name", "Panel", "Marker", "Dye"] + [
-    f"Allele {i}" for i in range(1, 34 + 1)
-]
 
 
 def load_genemapper_data(file) -> pd.DataFrame:
@@ -26,14 +27,8 @@ def load_genemapper_data(file) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the Genemapper data.
     """
-    # Read the file into a DataFrame
-    try:
-        df = pd.read_csv(file, sep="\t", engine="python")
-        if df.empty:
-            raise ValueError("Le fichier est vide ou mal formaté.")
-        return df
-    except Exception as e:
-        raise RuntimeError(f"Erreur lors de la lecture du fichier : {e}")
+    processor = DataProcessor(pd.DataFrame())
+    return processor.load_genemapper_data(file)
 
 
 def validate_file_format(df: pd.DataFrame) -> list[str]:
@@ -46,12 +41,12 @@ def validate_file_format(df: pd.DataFrame) -> list[str]:
     Returns:
         list[str]: List of missing columns. If all required columns are present, returns an empty list.
     """
-    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
-    return missing_columns
+    processor = DataProcessor(df)
+    return processor.validate_file_format()
 
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Prepare the data for comparisons.
+    """Prepare the data for analysis.
 
     Args:
         df (pd.DataFrame): The DataFrame to prepare.
@@ -59,49 +54,9 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The prepared DataFrame.
     """
-    # drop always empty columns
-    df = df.copy().drop(
-        columns=[
-            "Sample File",
-            "Panel",
-            "Marker",
-            "Dye",
-            "Allele 31",
-            "Allele 32",
-            "Unnamed: 39",
-        ],
-        errors="ignore",
-    )
-
-    allele_cols = [
-        col
-        for col in df.columns
-        if col.startswith(ALLELE_PREFIX)
-        and col != GENDER_ALLELES_X
-        and col != GENDER_ALLELES_Y
-    ]
-
-    # compute the signature and hash from the alleles
-    df["signature"] = df.apply(lambda row: compute_signature(row, allele_cols), axis=1)
-    df["signature_hash"] = df.apply(lambda row: compute_signature_hash(row), axis=1)
-    df["signature_len"] = df["signature"].apply(len)
-
-    # Determine the gender of the sample
-    df["Genre"] = df.apply(determine_sex, axis=1)
-
-    # Remove the suffix "bis" or "ter" from the sample name
-    df["Patient"] = df["Sample Name"].str.replace(
-        r"^(.*?)(bis|ter)$", r"\1", regex=True
-    )
-
-    # Check if the sample is a negative control
-    df["is_neg"] = df["Sample Name"].apply(is_negative_control)
-
-    # Define default values for status_type and status_description
-    df["status_type"] = "success"  # Valeur par défaut
-    df["status_description"] = ""  # Valeur par défaut
-
-    return df
+    processor = DataProcessor(df)
+    analyzer = GeneticAnalyzer(processor.prepare_data())
+    return analyzer.prepare_data()
 
 
 def determine_sex(row: pd.Series) -> str:
@@ -176,37 +131,42 @@ def intra_comparison(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The DataFrame with the comparison results.
     """
+    analyzer = GeneticAnalyzer(df)
+    prepared_data = analyzer.prepare_data()
 
-    df = df.copy()
-
-    # Compare the signatures of each group of patients
-    for pid, group in df.groupby("Patient"):
+    for pid, group in prepared_data.groupby("Patient"):
         if len(group) == 1 and not group["is_neg"].iloc[0]:
-            if df.loc[group.index, "status_type"].unique() == "success":
-                df.loc[group.index, "status_type"] = "warning"
-                df.loc[group.index, "status_description"] = "Echantillon unique"
+            if prepared_data.loc[group.index, "status_type"].unique() == "success":
+                prepared_data.loc[group.index, "status_type"] = "warning"
+                prepared_data.loc[group.index, "status_description"] = (
+                    "Echantillon unique"
+                )
         elif len(group) == 1 and group["is_neg"].iloc[0]:
-            if df.loc[group.index, "signature_len"].any() > 0:
-                df.loc[group.index, "status_type"] = "error"
-                df.loc[group.index, "status_description"] = (
+            if prepared_data.loc[group.index, "signature_len"].any() > 0:
+                prepared_data.loc[group.index, "status_type"] = "error"
+                prepared_data.loc[group.index, "status_description"] = (
                     "Contrôle négatif avec alleles"
                 )
-            elif df.loc[group.index, "status_type"].unique() == "success":
-                df.loc[group.index, "status_type"] = "info"
-                df.loc[group.index, "status_description"] = "Contrôle négatif"
+            elif prepared_data.loc[group.index, "status_type"].unique() == "success":
+                prepared_data.loc[group.index, "status_type"] = "info"
+                prepared_data.loc[group.index, "status_description"] = (
+                    "Contrôle négatif"
+                )
         elif group["signature"].nunique() > 1:
-            if df.loc[group.index, "status_type"].unique() == "success":
-                df.loc[group.index, "status_type"] = "error"
-                df.loc[group.index, "status_description"] = "Incohérente de SNPs"
+            if prepared_data.loc[group.index, "status_type"].unique() == "success":
+                prepared_data.loc[group.index, "status_type"] = "error"
+                prepared_data.loc[group.index, "status_description"] = (
+                    "Incohérente de SNPs"
+                )
         elif group["Genre"].nunique() > 1:
-            if df.loc[group.index, "status_type"].unique() == "success":
-                df.loc[group.index, "status_type"] = "error"
-                df.loc[group.index, "status_description"] = "Incohérence de genre"
+            if prepared_data.loc[group.index, "status_type"].unique() == "success":
+                prepared_data.loc[group.index, "status_type"] = "error"
+                prepared_data.loc[group.index, "status_description"] = (
+                    "Incohérence de genre"
+                )
 
-    # remove unused columns
-    df.drop(columns=["signature", "signature_len", "is_neg"], inplace=True)
-
-    return df
+    prepared_data.drop(columns=["signature", "signature_len", "is_neg"], inplace=True)
+    return prepared_data
 
 
 def inter_comparison(df: pd.DataFrame) -> pd.DataFrame:
@@ -219,16 +179,14 @@ def inter_comparison(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The DataFrame with the comparison results.
     """
-    df = df.copy()
-    df.drop(columns=["signature"], inplace=True)
+    analyzer = GeneticAnalyzer(df)
+    prepared_data = analyzer.prepare_data()
+    prepared_data.drop(columns=["signature"], inplace=True)
 
     duplicated = []
-    df_filtered = df[df["signature_len"] > 0].copy()
+    df_filtered = prepared_data[prepared_data["signature_len"] > 0].copy()
 
-    # find samples with the same signature_hash
     for sig, group in df_filtered.groupby("signature_hash"):
-
-        # check if samples with the same signature_hash have different patients
         if len(group["Patient"].unique()) > 1:
             duplicated.append(group)
 
@@ -253,37 +211,8 @@ def merge_genotypes(df):
     Returns:
         pd.DataFrame : Simplified DataFrame with the columns Locus 1, Locus 2, ...
     """
-
-    # Keep the not alleles columns
-    keeping_cols = [col for col in df.columns if not col.startswith(ALLELE_PREFIX)]
-    merged_data = df[keeping_cols].copy()
-
-    # Get the alleles columns
-    allele_cols = [col for col in df.columns if col.startswith(ALLELE_PREFIX)]
-
-    # Group by pairs the allele columns
-    pairs = [
-        (allele_cols[i], allele_cols[i + 1]) for i in range(0, len(allele_cols) - 1, 2)
-    ]
-
-    for idx, (a1, a2) in enumerate(pairs, start=1):
-
-        def combine(row):
-            val1 = str(row[a1]).strip().split("_")[-1].replace("nan", "")
-            val2 = str(row[a2]).strip().split("_")[-1].replace("nan", "")
-            if not val1 and not val2:
-                return ""
-            if val1 and not val2:
-                return val1
-            if not val1 and val2:
-                return val2
-            if val1 == val2:
-                return val1
-            return f"{val1}/{val2}"
-
-        merged_data[f"Locus {idx}"] = df.apply(combine, axis=1)
-
-    return merged_data
+    processor = DataProcessor(df)
+    return processor.merge_genotypes(df)
 
 
 def sample_heatmap(df: pd.DataFrame) -> pd.DataFrame:
@@ -295,48 +224,34 @@ def sample_heatmap(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the similarity percentages.
     """
-    df = df.copy()
+    analyzer = GeneticAnalyzer(df)
+    prepared_data = analyzer.prepare_data()
 
-    # get the columns to use for the similarity comparison
-    allele_columns = [
-        col
-        for col in df.columns
-        if col.startswith(ALLELE_PREFIX)
-        and col != GENDER_ALLELES_X
-        and col != GENDER_ALLELES_Y
-    ] + ["Genre"]
-
-    patient_ids = df["Sample Name"].unique()  # Get unique patient IDs
+    allele_columns = analyzer._get_allele_columns() + ["Genre"]
+    patient_ids = prepared_data["Sample Name"].unique()
     comparison_matrix = pd.DataFrame(index=patient_ids, columns=patient_ids)
 
-    # Compare each pair of patients
     for patient_1 in patient_ids:
         for patient_2 in patient_ids:
-
-            sample_1 = df[df["Sample Name"] == patient_1][
+            sample_1 = prepared_data[prepared_data["Sample Name"] == patient_1][
                 allele_columns
             ].values.flatten()
-            sample_2 = df[df["Sample Name"] == patient_2][
+            sample_2 = prepared_data[prepared_data["Sample Name"] == patient_2][
                 allele_columns
             ].values.flatten()
 
-            # Compare the alleles of the two samples
             common_alleles = 0
             total_alleles = 0
 
             for a1, a2 in zip(sample_1, sample_2):
                 total_alleles += 1
-                # If the two values are NaN, they are considered equal
                 if pd.isna(a1) and pd.isna(a2):
                     common_alleles += 1
-                # If one value is NaN and the other is not, it's a difference
                 elif pd.isna(a1) or pd.isna(a2):
                     continue
-                # If the values are equal, count them as common
                 elif a1 == a2:
                     common_alleles += 1
 
-            # Calculate the percentage of common alleles
             if total_alleles > 0:
                 identity_percentage = (common_alleles / total_alleles) * 100
             else:
@@ -356,9 +271,8 @@ def save_heatmap_as_image(fig: plotly.graph_objects.Figure) -> str:
     Returns:
         str : path to the temporary image file
     """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-        fig.write_image(tmpfile.name, width=1200, height=1200)
-        return tmpfile.name
+    generator = ReportGenerator()
+    return generator.save_heatmap_as_image(fig)
 
 
 def generate_html_report(
@@ -398,7 +312,14 @@ def save_pdf_from_html(html_content, output_path):
 def generate_pdf_report_custom(
     df_intra, df_inter, figure_path, metadata, errors_intra, errors_inter, output_path
 ):
-    html = generate_html_report(
-        df_intra, df_inter, figure_path, metadata, errors_intra, errors_inter
+    """Generate a PDF report from the data."""
+    generator = ReportGenerator()
+    generator.generate_pdf_report(
+        df_intra,
+        df_inter,
+        figure_path,
+        metadata,
+        errors_intra,
+        errors_inter,
+        output_path,
     )
-    save_pdf_from_html(html, output_path)
