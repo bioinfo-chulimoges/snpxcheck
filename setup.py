@@ -1,20 +1,31 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+with open("requirements.txt", "r", encoding="utf-8") as fh:
+    requirements = fh.read().splitlines()
+
 setup(
     name="snpxplex_streamlit",
-    version="0.1.0",
+    version="1.0.0",
+    author="Paco",
+    author_email="paco@example.com",
+    description="Application Streamlit pour l'analyse génétique SNPXPlex",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://gitlab.com/your-username/snpxplex_streamlit",
     packages=find_packages(),
-    package_data={
-        "src.app": ["static/*"],
-        "src.reporting": ["templates/*"],
-    },
-    install_requires=[
-        "streamlit>=1.28.0",
-        "pandas>=2.0.0",
-        "numpy>=1.24.0",
-        "plotly>=5.18.0",
-        "weasyprint>=60.1",
-        "jinja2>=3.1.0",
-        "natsort>=8.4.0",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
     ],
+    python_requires=">=3.8",
+    install_requires=requirements,
+    entry_points={
+        "console_scripts": [
+            "snpxplex=src.app.main:main",
+        ],
+    },
 )
