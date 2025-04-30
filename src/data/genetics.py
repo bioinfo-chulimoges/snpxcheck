@@ -47,6 +47,8 @@ class GeneticAnalyzer:
 
     def is_negative_control(self, sample_name: str) -> bool:
         """Check if the sample is a negative control."""
+        if not sample_name:
+            return False
         name = sample_name.lower()
         return any(k in name for k in NEGATIVE_KEYWORDS)
 

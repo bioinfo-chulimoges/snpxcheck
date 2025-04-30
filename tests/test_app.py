@@ -1,93 +1,138 @@
-from io import StringIO
 import pandas as pd
-from app import (
-    read_file,
-    highlight_status,
-    insert_blank_rows_between_groups,
-    create_plotly_heatmap,
+import pytest
+from src.app.main import (
+    render_intra_comparison,
+    render_inter_comparison,
+    render_heatmap,
+    generate_pdf_report,
+    main,
 )
+from src.utils.models import SessionState, ComparisonResult, Metadata
+import warnings
+
+# Ignore the setDaemon deprecation warning from kaleido
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="kaleido")
 
 
-def test_app_upload(tmp_path):
-
-    file_path = tmp_path / "input.txt"
-    file_path.write_text("Sample Name\tAllele 1\tAllele 2\nS1\tA\tT\n")
-
-    with open(file_path, "rb") as f:
-        result = read_file(f)
-        assert isinstance(result, pd.DataFrame)
-
-
-def test_read_file_valid():
-    mock_data = "Sample Name\tAllele 1\tAllele 2\nS1\tA\tT\n"
-    fake_file = StringIO(mock_data)
-    df = read_file(fake_file)
-
-    assert isinstance(df, pd.DataFrame)
-    assert list(df.columns) == ["Sample Name", "Allele 1", "Allele 2"]
-
-
-def test_read_file_invalid():
-    fake_file = StringIO("Invalid content")
-
-    df = read_file(fake_file)
-    assert df is None
-
-
-# --- highlight_status ---
-
-
-def test_highlight_status_error_coloring():
-    df = pd.Series({"status_type": "error"})
-    styled = highlight_status(df)
-    assert styled == ["background-color: #f8d7da"]
-
-
-def test_highlight_status_warning_coloring():
-    df = pd.Series({"status_type": "warning"})
-    styled = highlight_status(df)
-    assert styled == ["background-color: #fff3cd"]
-
-
-def test_highlight_status_info_coloring():
-    df = pd.Series({"status_type": "info"})
-    styled = highlight_status(df)
-    assert styled == ["background-color: #d1ecf1"]
-
-
-def test_highlight_status_success_coloring():
-    df = pd.Series({"status_type": "success"})
-    styled = highlight_status(df)
-    assert styled == ["background-color: #ffffff"]
-
-
-def test_highlight_status_other_coloring():
-    df = pd.Series({"status_type": "unknown"})
-    styled = highlight_status(df)
-    assert styled == ["background-color: white"]
-
-
-# --- insert_blank_rows_between_groups ---
-
-
-def test_insert_blank_rows():
-    df = pd.DataFrame(
+@pytest.fixture
+def sample_comparison_data():
+    """Create sample comparison data."""
+    df_intra = pd.DataFrame(
         {
             "Patient": ["P1", "P1", "P2", "P2"],
-            "Sample Name": ["P1a", "P1b", "P2a", "P2b"],
-            "Allele 1": ["A", "A", "T", "T"],
+            "Sample Name": ["S1", "S2", "S3", "S4"],
+            "Genre": ["homme", "homme", "femme", "femme"],
+            "status_description": ["", "Warning", "Error", ""],
+            "status_type": ["success", "warning", "error", "success"],
         }
     )
-    result = insert_blank_rows_between_groups(df, group_col="Patient")
 
-    assert result.shape[0] == df.shape[0] + 1
-    assert result["Patient"].tolist() == ["P1", "P1", "", "P2", "P2"]
-
-
-def test_create_plotly_heatmap():
-    data = pd.DataFrame(
-        [[1.0, 0.8], [0.8, 1.0]], index=["P1", "P2"], columns=["P1", "P2"]
+    df_inter = pd.DataFrame(
+        {
+            "Sample Name": ["S1", "S2", "S3", "S4"],
+            "signature_hash": ["hash1", "hash1", "hash2", "hash2"],
+            "1": ["C/T", "C/T", "C/C", "T/T"],
+            "2": ["A/G", "A/A", "G/G", "A/G"],
+            "3": ["T", "T/C", "C", "T/C"],
+        }
     )
-    fig = create_plotly_heatmap(data)
-    assert fig.data is not None
-    assert fig.layout is not None
+
+    return df_intra, df_inter
+
+
+@pytest.fixture
+def sample_heatmap():
+    """Create a sample heatmap."""
+    import plotly.graph_objects as go
+
+    return go.Figure(
+        data=go.Heatmap(
+            z=[
+                [100, 50, 25, 0],
+                [50, 100, 75, 25],
+                [25, 75, 100, 50],
+                [0, 25, 50, 100],
+            ],
+            x=["S1", "S2", "S3", "S4"],
+            y=["S1", "S2", "S3", "S4"],
+        )
+    )
+
+
+@pytest.fixture
+def session_state(sample_comparison_data, sample_heatmap):
+    """Create a sample session state."""
+    df_intra, df_inter = sample_comparison_data
+    return SessionState(
+        comparison_result=ComparisonResult(
+            df_intra=df_intra,
+            df_inter=df_inter,
+            heatmap=sample_heatmap,
+            errors_intra=1,
+            errors_inter=2,
+        ),
+        metadata=Metadata(
+            date="2024-04-30",
+            filename="test.txt",
+            interpreter="John Doe",
+            week="2024-W18",
+            serie="Oui",
+            comment="Test comment",
+        ),
+    )
+
+
+def test_render_intra_comparison(sample_comparison_data):
+    """Test rendering intra-comparison results."""
+    df_intra, _ = sample_comparison_data
+    error_count = 1
+
+    result = render_intra_comparison(df_intra, error_count)
+
+    assert isinstance(result, pd.DataFrame)
+    assert all(
+        col in result.columns
+        for col in [
+            "Patient",
+            "Sample Name",
+            "Genre",
+            "status_description",
+            "status_type",
+        ]
+    )
+
+
+def test_render_inter_comparison(sample_comparison_data):
+    """Test rendering inter-comparison results."""
+    _, df_inter = sample_comparison_data
+
+    # This function doesn't return anything, we just check it doesn't raise an error
+    render_inter_comparison(df_inter)
+
+
+def test_render_heatmap(sample_heatmap):
+    """Test rendering the heatmap."""
+    # This function doesn't return anything, we just check it doesn't raise an error
+    render_heatmap(sample_heatmap)
+
+
+def test_generate_pdf_report(session_state, tmp_path):
+    """Test generating the PDF report."""
+    # Call the function
+    result_path = generate_pdf_report(session_state)
+
+    # Verify the returned path and file
+    assert result_path is not None
+    assert result_path.exists()
+    assert result_path.stat().st_size > 0
+
+    # Clean up
+    result_path.unlink()
+
+
+def test_main():
+    """Test the main function."""
+    # This is a basic test that just checks the function can be called
+    # without raising an error. More detailed testing would require
+    # mocking Streamlit's components.
+    main()

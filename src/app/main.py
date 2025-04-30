@@ -9,6 +9,7 @@ from src.utils.models import SessionState
 import os
 import tempfile
 from datetime import datetime
+from pathlib import Path
 
 # Initialize the service
 service = IdentityVigilanceService()
@@ -52,11 +53,11 @@ def render_heatmap(heatmap):
         st.warning("Aucune donnée à afficher.")
 
 
-def generate_pdf_report(session_state: SessionState):
+def generate_pdf_report(session_state: SessionState) -> Path:
     """Generate and download the PDF report."""
     if not session_state.comparison_result:
         st.error("Aucune donnée ou graphique disponible pour générer le rapport.")
-        return
+        return None
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as pdf_file:
         service.generate_pdf_report(
@@ -75,6 +76,8 @@ def generate_pdf_report(session_state: SessionState):
                 f,
                 file_name="rapport_identitovigilance.pdf",
             )
+
+        return Path(pdf_file.name)
 
 
 def main():

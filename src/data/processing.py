@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import List, Tuple
+from typing import List
 from src.utils.config import COLUMNS_TO_DROP, REQUIRED_COLUMNS
 
 
@@ -22,7 +22,7 @@ class DataProcessor:
                 raise ValueError("Le fichier est vide ou mal formaté.")
             return df
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de la lecture du fichier : {e}")
+            raise ValueError(f"Erreur lors de la lecture du fichier : {e}")
 
     def prepare_data(self) -> pd.DataFrame:
         """Prepare the data for analysis."""

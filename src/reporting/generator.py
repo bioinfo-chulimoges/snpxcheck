@@ -11,11 +11,18 @@ class ReportGenerator:
         self.env = Environment(loader=FileSystemLoader(template_dir))
         self.template_dir = template_dir
 
-    def save_heatmap_as_image(self, fig: plotly.graph_objects.Figure) -> str:
+    def save_heatmap_as_image(
+        self, fig: plotly.graph_objects.Figure, output_dir: str = None
+    ) -> str:
         """Save a Plotly figure to a png image."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-            fig.write_image(tmpfile.name, width=1200, height=1200)
-            return tmpfile.name
+        if output_dir is None:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+                fig.write_image(tmpfile.name, width=1200, height=1200)
+                return tmpfile.name
+        else:
+            output_path = os.path.join(output_dir, "heatmap.png")
+            fig.write_image(output_path, width=1200, height=1200)
+            return output_path
 
     def generate_html_report(
         self,
