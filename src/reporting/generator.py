@@ -3,11 +3,13 @@ import pandas as pd
 from weasyprint import HTML, CSS
 from jinja2 import Environment, FileSystemLoader
 import plotly
+import os
 
 
 class ReportGenerator:
-    def __init__(self, template_dir: str = "templates"):
+    def __init__(self, template_dir: str = "src/reporting/templates"):
         self.env = Environment(loader=FileSystemLoader(template_dir))
+        self.template_dir = template_dir
 
     def save_heatmap_as_image(self, fig: plotly.graph_objects.Figure) -> str:
         """Save a Plotly figure to a png image."""
@@ -43,9 +45,8 @@ class ReportGenerator:
 
     def save_pdf_from_html(self, html_content: str, output_path: str):
         """Convert the html to a pdf file."""
-        HTML(string=html_content).write_pdf(
-            output_path, stylesheets=[CSS("templates/styles.css")]
-        )
+        css_path = os.path.join(self.template_dir, "styles.css")
+        HTML(string=html_content).write_pdf(output_path, stylesheets=[CSS(css_path)])
 
     def generate_pdf_report(
         self,

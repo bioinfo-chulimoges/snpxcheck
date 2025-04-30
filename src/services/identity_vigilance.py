@@ -1,9 +1,9 @@
 import pandas as pd
 from typing import Optional, Tuple
-from data_processing import DataProcessor
-from genetics import GeneticAnalyzer
-from reporting import ReportGenerator
-from visualization import (
+from src.data.processing import DataProcessor
+from src.data.genetics import GeneticAnalyzer
+from src.reporting.generator import ReportGenerator
+from src.visualization.plots import (
     create_plotly_heatmap,
     highlight_status,
     insert_blank_rows_between_groups,

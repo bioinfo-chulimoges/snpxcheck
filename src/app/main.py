@@ -1,15 +1,13 @@
 import streamlit as st
 import pandas as pd
-from services import IdentityVigilanceService
-from visualization import (
-    create_plotly_heatmap,
+from src.services.identity_vigilance import IdentityVigilanceService
+from src.visualization.plots import (
     highlight_status,
     insert_blank_rows_between_groups,
 )
-from models import SessionState
+from src.utils.models import SessionState
 import os
 import tempfile
-import base64
 from datetime import datetime
 
 # Initialize the service

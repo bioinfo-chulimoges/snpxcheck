@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List, Tuple
-from constants import COLUMNS_TO_DROP, REQUIRED_COLUMNS
+from src.utils.config import COLUMNS_TO_DROP, REQUIRED_COLUMNS
 
 
 class DataProcessor:

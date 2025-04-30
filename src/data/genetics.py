@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Tuple
 from hashlib import sha1
-from constants import (
+from src.utils.config import (
     ALLELE_PREFIX,
     GENDER_ALLELES_X,
     GENDER_ALLELES_Y,

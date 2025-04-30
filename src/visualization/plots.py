@@ -2,7 +2,7 @@ import pandas as pd
 import plotly
 import numpy as np
 from natsort import natsorted
-from typing import Optional, List
+from typing import List
 
 
 def highlight_status(row: pd.Series) -> List[str]:
