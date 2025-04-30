@@ -1,3 +1,9 @@
+"""Main application module.
+
+This module contains the Streamlit application interface and main logic
+for the SNPXPlex identity verification system.
+"""
+
 import streamlit as st
 import pandas as pd
 from src.services.identity_vigilance import IdentityVigilanceService
@@ -16,7 +22,15 @@ service = IdentityVigilanceService()
 
 
 def render_intra_comparison(df_intra: pd.DataFrame, error_count: int):
-    """Render the intra-patient comparison section."""
+    """Render the intra-patient comparison section.
+
+    Args:
+        df_intra (pd.DataFrame): DataFrame containing intra-patient comparison results.
+        error_count (int): Number of errors found in the comparison.
+
+    Returns:
+        pd.DataFrame: DataFrame with status information for display.
+    """
     st.subheader("Comparaison intra-patient", divider="grey")
     if error_count > 0:
         st.error(f"Erreur : {error_count} échantillon(s) incohérent(s) détecté(s).")
@@ -32,7 +46,11 @@ def render_intra_comparison(df_intra: pd.DataFrame, error_count: int):
 
 
 def render_inter_comparison(df_inter: pd.DataFrame):
-    """Render the inter-patient comparison section."""
+    """Render the inter-patient comparison section.
+
+    Args:
+        df_inter (pd.DataFrame): DataFrame containing inter-patient comparison results.
+    """
     st.subheader("Comparaison inter-patient", divider="grey")
     if df_inter.empty:
         st.success("Tous les échantillons sont cohérents.")
@@ -43,7 +61,11 @@ def render_inter_comparison(df_inter: pd.DataFrame):
 
 
 def render_heatmap(heatmap):
-    """Render the heatmap section."""
+    """Render the heatmap section.
+
+    Args:
+        heatmap: Plotly figure containing the heatmap visualization.
+    """
     st.subheader(
         "Matrice de comparaison des patients (% allèles en commun) :", divider="grey"
     )
@@ -54,7 +76,14 @@ def render_heatmap(heatmap):
 
 
 def generate_pdf_report(session_state: SessionState) -> Path:
-    """Generate and download the PDF report."""
+    """Generate and download the PDF report.
+
+    Args:
+        session_state (SessionState): Current session state containing analysis results.
+
+    Returns:
+        Path: Path to the generated PDF file.
+    """
     if not session_state.comparison_result:
         st.error("Aucune donnée ou graphique disponible pour générer le rapport.")
         return None
@@ -81,6 +110,11 @@ def generate_pdf_report(session_state: SessionState) -> Path:
 
 
 def main():
+    """Main application function.
+
+    This function sets up the Streamlit interface and handles the main application logic,
+    including file upload, data processing, analysis, and report generation.
+    """
     # Configure the Streamlit app
     st.set_page_config(
         page_title="Identitovigilence SNPXPlex",

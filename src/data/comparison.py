@@ -1,3 +1,9 @@
+"""Comparison module for genetic data analysis.
+
+This module provides functionality for comparing genetic data between samples,
+including intra-patient and inter-patient comparisons.
+"""
+
 import pandas as pd
 from typing import List, Tuple, Optional
 from src.data.processing import DataProcessor
@@ -6,21 +12,44 @@ from src.visualization.plots import create_plotly_heatmap
 
 
 class ComparisonEngine:
+    """Service for performing genetic comparisons.
+
+    This class provides methods for comparing genetic data between samples,
+    including intra-patient and inter-patient comparisons, and generating
+    visualization of the results.
+
+    Attributes:
+        data (pd.DataFrame): DataFrame containing the genetic data to analyze.
+    """
+
     def __init__(self, data: pd.DataFrame):
+        """Initialize the ComparisonEngine with genetic data.
+
+        Args:
+            data (pd.DataFrame): DataFrame containing genetic data to analyze.
+        """
         self.data = data
         processor = DataProcessor(data)
         analyzer = GeneticAnalyzer(processor.prepare_data())
         self.prepared_data = analyzer.prepare_data()
 
     def perform_intra_comparison(self) -> Tuple[pd.DataFrame, int]:
-        """Perform intra-patient comparison and return the results with error count."""
+        """Perform intra-patient comparison analysis.
+
+        Returns:
+            Tuple[pd.DataFrame, int]: DataFrame with comparison results and error count.
+        """
         df_intra = self._intra_comparison(self.prepared_data)
         df_intra = self._merge_genotypes(df_intra)
         error_count = df_intra["status_type"].value_counts().get("error", 0)
         return df_intra, error_count
 
     def perform_inter_comparison(self) -> Tuple[pd.DataFrame, int]:
-        """Perform inter-patient comparison and return the results with error count."""
+        """Perform inter-patient comparison analysis.
+
+        Returns:
+            Tuple[pd.DataFrame, int]: DataFrame with comparison results and error count.
+        """
         df_inter = self._inter_comparison(self.prepared_data)
         error_count = len(df_inter)
         if not df_inter.empty:
@@ -28,7 +57,11 @@ class ComparisonEngine:
         return df_inter, error_count
 
     def generate_heatmap(self) -> Optional[object]:
-        """Generate the comparison heatmap."""
+        """Generate a heatmap of genetic similarities between patients.
+
+        Returns:
+            plotly.graph_objects.Figure: Plotly figure containing the heatmap.
+        """
         comparison_matrix = self._sample_heatmap(self.prepared_data)
         if not comparison_matrix.empty:
             return create_plotly_heatmap(comparison_matrix)

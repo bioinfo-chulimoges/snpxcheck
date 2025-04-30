@@ -1,3 +1,9 @@
+"""Visualization module.
+
+This module provides functions for creating visualizations of genetic data,
+including heatmaps and styled DataFrames.
+"""
+
 import pandas as pd
 import plotly
 import numpy as np
@@ -6,7 +12,14 @@ from typing import List
 
 
 def highlight_status(row: pd.Series) -> List[str]:
-    """Highlight rows based on the status_type column."""
+    """Apply background color to rows based on their status.
+
+    Args:
+        row (pd.Series): Row of data to highlight.
+
+    Returns:
+        List[str]: List of CSS background-color properties for each cell.
+    """
     color = {
         "success": "#ffffff",  # green clair
         "error": "#f8d7da",  # red clair
@@ -19,7 +32,15 @@ def highlight_status(row: pd.Series) -> List[str]:
 def insert_blank_rows_between_groups(
     df: pd.DataFrame, group_col: str = "Patient"
 ) -> pd.DataFrame:
-    """Insert blank rows between groups in a DataFrame."""
+    """Insert blank rows between groups in a DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame to process.
+        group_col (str, optional): Column name to group by. Defaults to "Patient".
+
+    Returns:
+        pd.DataFrame: DataFrame with blank rows inserted between groups.
+    """
     df = df.sort_values(group_col)
     rows = []
 
@@ -39,7 +60,14 @@ def insert_blank_rows_between_groups(
 def create_plotly_heatmap(
     comparison_matrix: pd.DataFrame,
 ) -> plotly.graph_objects.Figure:
-    """Create a heatmap using Plotly."""
+    """Create a heatmap using Plotly.
+
+    Args:
+        comparison_matrix (pd.DataFrame): Matrix of comparison values.
+
+    Returns:
+        plotly.graph_objects.Figure: Plotly figure object containing the heatmap.
+    """
     sorted_patients = natsorted(comparison_matrix.index.tolist())
     comparison_matrix = comparison_matrix.loc[sorted_patients, sorted_patients]
 
