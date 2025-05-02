@@ -65,9 +65,9 @@ lint:
     - cat docformatter.txt
   artifacts:
     reports:
-      codequality: $CI_PROJECT_DIR/code-quality-report.json
+      codequality: code-quality-report.json
     paths:
-      - $CI_PROJECT_DIR/code-quality-report.json
+      - code-quality-report.json
       - black.txt
       - docformatter.txt
     expire_in: 1 week
