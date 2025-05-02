@@ -4,8 +4,10 @@ This module handles the processing and preparation of genetic data, including fi
 validation, data loading, and genotype merging.
 """
 
-import pandas as pd
 from typing import List
+
+import pandas as pd
+
 from src.utils.config import COLUMNS_TO_DROP, REQUIRED_COLUMNS
 
 
@@ -31,7 +33,8 @@ class DataProcessor:
         """Check if the DataFrame has the required columns.
 
         Returns:
-            List[str]: List of missing required columns. Empty list if all columns are present.
+            List[str]: List of missing required columns. Empty list if all columns
+                are present.
         """
         missing_columns = [
             col for col in REQUIRED_COLUMNS if col not in self.df.columns
@@ -56,7 +59,9 @@ class DataProcessor:
                 raise ValueError("Le fichier est vide ou mal formaté.")
             return df
         except Exception as e:
-            raise ValueError(f"Erreur lors de la lecture du fichier : {e}")
+            raise ValueError(
+                f"Erreur lors de la lecture du fichier : {e}"
+            ) from e
 
     def prepare_data(self) -> pd.DataFrame:
         """Prepare the data for analysis by removing unnecessary columns.
@@ -77,7 +82,9 @@ class DataProcessor:
         Returns:
             pd.DataFrame: DataFrame with merged genotypes for each locus.
         """
-        keeping_cols = [col for col in df.columns if not col.startswith("Allele")]
+        keeping_cols = [
+            col for col in df.columns if not col.startswith("Allele")
+        ]
         merged_data = df[keeping_cols].copy()
 
         allele_cols = [col for col in df.columns if col.startswith("Allele")]
@@ -88,7 +95,7 @@ class DataProcessor:
 
         for idx, (a1, a2) in enumerate(pairs, start=1):
 
-            def combine(row):
+            def combine(row, a1, a2):
                 val1 = str(row[a1]).strip().split("_")[-1].replace("nan", "")
                 val2 = str(row[a2]).strip().split("_")[-1].replace("nan", "")
                 if not val1 and not val2:
@@ -101,6 +108,8 @@ class DataProcessor:
                     return val1
                 return f"{val1}/{val2}"
 
-            merged_data[f"Locus {idx}"] = df.apply(combine, axis=1)
+            merged_data[f"Locus {idx}"] = df.apply(
+                combine, args=(a1, a2), axis=1
+            )
 
         return merged_data

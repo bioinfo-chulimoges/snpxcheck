@@ -1,5 +1,8 @@
-import pytest
+# ruff: noqa: PLR2004
+
 import pandas as pd
+import pytest
+
 from src.services.identity_vigilance import IdentityVigilanceService
 
 
@@ -34,7 +37,9 @@ def service():
     return IdentityVigilanceService()
 
 
-def test_load_and_validate_file_valid(service, sample_genemapper_data, tmp_path):
+def test_load_and_validate_file_valid(
+    service, sample_genemapper_data, tmp_path
+):
     """Test loading and validating a valid Genemapper file."""
     # Create a temporary file with valid data
     file_path = tmp_path / "test.txt"
@@ -84,7 +89,9 @@ def test_load_and_validate_file_missing_columns(
 def test_prepare_data(service, sample_genemapper_data):
     """Test data preparation."""
     # First load and validate the data
-    service.data_processor = service.data_processor.__class__(sample_genemapper_data)
+    service.data_processor = service.data_processor.__class__(
+        sample_genemapper_data
+    )
 
     prepared_data = service.prepare_data(sample_genemapper_data)
 
@@ -102,7 +109,9 @@ def test_prepare_data(service, sample_genemapper_data):
 def test_perform_intra_comparison(service, sample_genemapper_data):
     """Test intra-patient comparison."""
     # First prepare the data
-    service.data_processor = service.data_processor.__class__(sample_genemapper_data)
+    service.data_processor = service.data_processor.__class__(
+        sample_genemapper_data
+    )
     prepared_data = service.prepare_data(sample_genemapper_data)
 
     df_intra, error_count = service.perform_intra_comparison(prepared_data)
@@ -116,7 +125,9 @@ def test_perform_intra_comparison(service, sample_genemapper_data):
 def test_perform_inter_comparison(service, sample_genemapper_data):
     """Test inter-patient comparison."""
     # First prepare the data
-    service.data_processor = service.data_processor.__class__(sample_genemapper_data)
+    service.data_processor = service.data_processor.__class__(
+        sample_genemapper_data
+    )
     prepared_data = service.prepare_data(sample_genemapper_data)
 
     df_inter, error_count = service.perform_inter_comparison(prepared_data)
@@ -128,7 +139,9 @@ def test_perform_inter_comparison(service, sample_genemapper_data):
 def test_generate_heatmap(service, sample_genemapper_data):
     """Test heatmap generation."""
     # First prepare the data
-    service.data_processor = service.data_processor.__class__(sample_genemapper_data)
+    service.data_processor = service.data_processor.__class__(
+        sample_genemapper_data
+    )
     prepared_data = service.prepare_data(sample_genemapper_data)
 
     heatmap = service.generate_heatmap(prepared_data)

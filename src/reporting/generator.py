@@ -4,12 +4,14 @@ This module handles the generation of HTML and PDF reports from analysis results
 including heatmap visualization and comparison data.
 """
 
-import tempfile
-import pandas as pd
-from weasyprint import HTML, CSS
-from jinja2 import Environment, FileSystemLoader
-import plotly
 import os
+import tempfile
+from typing import Optional
+
+import pandas as pd
+import plotly
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import CSS, HTML
 
 
 class ReportGenerator:
@@ -34,7 +36,9 @@ class ReportGenerator:
         self.template_dir = template_dir
 
     def save_heatmap_as_image(
-        self, fig: plotly.graph_objects.Figure, output_dir: str = None
+        self,
+        fig: plotly.graph_objects.Figure,
+        output_dir: Optional[str] = None,
     ) -> str:
         """Save a Plotly figure to a PNG image.
 
@@ -47,7 +51,9 @@ class ReportGenerator:
             str: Path to the saved image file.
         """
         if output_dir is None:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".png"
+            ) as tmpfile:
                 fig.write_image(tmpfile.name, width=1200, height=1200)
                 return tmpfile.name
         else:
@@ -55,7 +61,7 @@ class ReportGenerator:
             fig.write_image(output_path, width=1200, height=1200)
             return output_path
 
-    def generate_html_report(
+    def generate_html_report(  # noqa: PLR0913
         self,
         df_intra: pd.DataFrame,
         df_inter: pd.DataFrame,
@@ -67,8 +73,8 @@ class ReportGenerator:
         """Generate a HTML report using jinja2 template.
 
         Args:
-            df_intra (pd.DataFrame): DataFrame containing intra-patient comparison results.
-            df_inter (pd.DataFrame): DataFrame containing inter-patient comparison results.
+            df_intra (pd.DataFrame): DataFrame containing intra-patient comparison.
+            df_inter (pd.DataFrame): DataFrame containing inter-patient comparison.
             fig_path (str): Path to the heatmap image.
             metadata (dict): Dictionary containing report metadata.
             errors_intra (int): Number of intra-patient errors.
@@ -101,9 +107,11 @@ class ReportGenerator:
             output_path (str): Path where to save the PDF file.
         """
         css_path = os.path.join(self.template_dir, "styles.css")
-        HTML(string=html_content).write_pdf(output_path, stylesheets=[CSS(css_path)])
+        HTML(string=html_content).write_pdf(
+            output_path, stylesheets=[CSS(css_path)]
+        )
 
-    def generate_pdf_report(
+    def generate_pdf_report(  # noqa: PLR0913
         self,
         df_intra: pd.DataFrame,
         df_inter: pd.DataFrame,
@@ -116,8 +124,8 @@ class ReportGenerator:
         """Generate a PDF report from the data.
 
         Args:
-            df_intra (pd.DataFrame): DataFrame containing intra-patient comparison results.
-            df_inter (pd.DataFrame): DataFrame containing inter-patient comparison results.
+            df_intra (pd.DataFrame): DataFrame containing intra-patient comparison.
+            df_inter (pd.DataFrame): DataFrame containing inter-patient comparison.
             figure_path (str): Path to the heatmap image.
             metadata (dict): Dictionary containing report metadata.
             errors_intra (int): Number of intra-patient errors.
@@ -125,6 +133,11 @@ class ReportGenerator:
             output_path (str): Path where to save the PDF file.
         """
         html = self.generate_html_report(
-            df_intra, df_inter, figure_path, metadata, errors_intra, errors_inter
+            df_intra,
+            df_inter,
+            figure_path,
+            metadata,
+            errors_intra,
+            errors_inter,
         )
         self.save_pdf_from_html(html, output_path)

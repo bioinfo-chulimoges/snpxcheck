@@ -6,6 +6,7 @@ data, including comparison results, metadata, and session state.
 
 from dataclasses import dataclass
 from typing import Optional
+
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -64,7 +65,7 @@ class SessionState:
     storing comparison results and metadata.
 
     Attributes:
-        comparison_result (Optional[ComparisonResult]): Results of the genetic comparisons.
+        comparison_result (Optional[ComparisonResult]): Results of the comparisons.
         metadata (Optional[Metadata]): Metadata about the current analysis session.
     """
 

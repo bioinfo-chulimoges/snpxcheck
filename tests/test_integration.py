@@ -1,7 +1,8 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
+import pytest
+
 from src.services.identity_vigilance import IdentityVigilanceService
 from src.utils.config import REQUIRED_COLUMNS
 
@@ -26,7 +27,14 @@ def sample_genemapper_file(tmp_path):
                 allele_values.append(f"0{i//2}_T")
         f.write(
             "\t".join(
-                ["file1.txt", "sample1", "panel1", "marker1", "dye1"] + allele_values
+                [
+                    "file1.txt",
+                    "sample1",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
@@ -40,8 +48,14 @@ def sample_genemapper_file(tmp_path):
                 allele_values.append(f"0{i//2}_C")
         f.write(
             "\t".join(
-                ["file2.txt", "neg_control", "panel1", "marker1", "dye1"]
-                + allele_values
+                [
+                    "file2.txt",
+                    "neg_control",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
@@ -160,12 +174,20 @@ def test_flow_with_duplicate_samples(service, tmp_path):
                 allele_values.append(f"0{i//2}_T")
         f.write(
             "\t".join(
-                ["file1.txt", "patient1", "panel1", "marker1", "dye1"] + allele_values
+                [
+                    "file1.txt",
+                    "patient1",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
 
-        # Sample 2: Patient 1, second sample with different alleles (should trigger intra error)
+        # Sample 2: Patient 1, second sample with different alleles
+        # (should trigger intra error)
         allele_values = []
         for i in range(1, 35):
             if i % 2 == 1:  # First allele of the pair
@@ -174,13 +196,20 @@ def test_flow_with_duplicate_samples(service, tmp_path):
                 allele_values.append(f"0{i//2}_C")  # Changed from T to C
         f.write(
             "\t".join(
-                ["file2.txt", "patient1bis", "panel1", "marker1", "dye1"]
-                + allele_values
+                [
+                    "file2.txt",
+                    "patient1bis",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
 
-        # Sample 3: Patient 2 with same alleles as Patient 1's first sample (should trigger inter error)
+        # Sample 3: Patient 2 with same alleles as Patient 1's first sample
+        # (should trigger inter error)
         allele_values = []
         for i in range(1, 35):
             if i % 2 == 1:  # First allele of the pair
@@ -189,7 +218,14 @@ def test_flow_with_duplicate_samples(service, tmp_path):
                 allele_values.append(f"0{i//2}_T")
         f.write(
             "\t".join(
-                ["file3.txt", "patient3", "panel1", "marker1", "dye1"] + allele_values
+                [
+                    "file3.txt",
+                    "patient3",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
@@ -204,8 +240,12 @@ def test_flow_with_duplicate_samples(service, tmp_path):
 
     # 3. Perform intra-comparison
     df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
-    assert errors_intra > 0  # Should detect different signatures for same patient
+    assert (
+        errors_intra > 0
+    )  # Should detect different signatures for same patient
 
     # 4. Perform inter-comparison
     df_inter, errors_inter = service.perform_inter_comparison(prepared_data)
-    assert errors_inter > 0  # Should detect same signature for different patients
+    assert (
+        errors_inter > 0
+    )  # Should detect same signature for different patients

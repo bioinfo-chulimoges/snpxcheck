@@ -1,10 +1,10 @@
 from src.utils.config import (
     ALLELE_PREFIX,
+    COLUMNS_TO_DROP,
     GENDER_ALLELES_X,
     GENDER_ALLELES_Y,
     NEGATIVE_KEYWORDS,
     REQUIRED_COLUMNS,
-    COLUMNS_TO_DROP,
 )
 
 
@@ -38,7 +38,9 @@ def test_required_columns():
         assert f"Allele {i}" in REQUIRED_COLUMNS
 
     # Check total number of columns
-    assert len(REQUIRED_COLUMNS) == 5 + 34  # 5 basic columns + 34 allele columns
+    assert (
+        len(REQUIRED_COLUMNS) == 5 + 34
+    )  # 5 basic columns + 34 allele columns
 
 
 def test_columns_to_drop():
@@ -57,4 +59,4 @@ def test_columns_to_drop():
     assert "Unnamed: 39" in COLUMNS_TO_DROP
 
     # Check total number of columns
-    assert len(COLUMNS_TO_DROP) == 7
+    assert len(COLUMNS_TO_DROP) == 7  # noqa: PLR2004

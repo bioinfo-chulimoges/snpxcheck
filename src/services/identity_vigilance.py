@@ -1,7 +1,9 @@
-import pandas as pd
 from typing import Optional, Tuple
-from src.data.processing import DataProcessor
+
+import pandas as pd
+
 from src.data.genetics import GeneticAnalyzer
+from src.data.processing import DataProcessor
 from src.reporting.generator import ReportGenerator
 from src.visualization.plots import (
     create_plotly_heatmap,
@@ -27,7 +29,8 @@ class IdentityVigilanceService:
             if missing_columns:
                 return (
                     None,
-                    f"Le fichier ne semble pas au bon format.\n\nColonnes manquantes : {missing_columns}",
+                    f"Le fichier ne semble pas au bon format.\n\n"
+                    f"Colonnes manquantes : {missing_columns}",
                 )
             return df, None
         except Exception as e:
@@ -70,7 +73,8 @@ class IdentityVigilanceService:
             "Genre",
             "status_description",
             "status_type",
-        ] + locus_columns
+            *locus_columns,
+        ]
 
         # Remove unnecessary columns and reorder
         return df[column_order].copy()
@@ -88,15 +92,13 @@ class IdentityVigilanceService:
         locus_columns = [col for col in df.columns if col.startswith("Locus")]
 
         # Define the column order
-        column_order = (
-            [
-                "Patient",
-                "Sample Name",
-                "Genre",
-            ]
-            + locus_columns
-            + ["signature_hash"]
-        )
+        column_order = [
+            "Patient",
+            "Sample Name",
+            "Genre",
+            *locus_columns,
+            "signature_hash",
+        ]
 
         # Remove unnecessary columns and reorder
         return df[column_order].copy()
@@ -112,7 +114,9 @@ class IdentityVigilanceService:
             df_inter = self.format_inter_comparison(df_inter)
         return df_inter, error_count
 
-    def generate_heatmap(self, prepared_data: pd.DataFrame) -> Optional[object]:
+    def generate_heatmap(
+        self, prepared_data: pd.DataFrame
+    ) -> Optional[object]:
         """Generate the comparison heatmap."""
         comparison_matrix = self._sample_heatmap(prepared_data)
         if not comparison_matrix.empty:
@@ -157,10 +161,7 @@ class IdentityVigilanceService:
         locus_columns = [col for col in df.columns if col.startswith("Locus")]
 
         # Define the column order
-        column_order = [
-            "Sample Name",
-            "signature_hash",
-        ] + locus_columns
+        column_order = ["Sample Name", "signature_hash", *locus_columns]
 
         # Select and reorder columns
         df = df[column_order].copy()
@@ -172,7 +173,7 @@ class IdentityVigilanceService:
         df = insert_blank_rows_between_groups(df, "signature_hash")
         return df.drop(columns=["signature_hash"])
 
-    def generate_pdf_report(
+    def generate_pdf_report(  # noqa: PLR0913
         self,
         df_intra: pd.DataFrame,
         df_inter: pd.DataFrame,
@@ -203,11 +204,13 @@ class IdentityVigilanceService:
     def _intra_comparison(self, df: pd.DataFrame) -> pd.DataFrame:
         """Internal method for intra-patient comparison."""
         df = df.copy()
-        for pid, group in df.groupby("Patient"):
+        for _pid, group in df.groupby("Patient"):
             if len(group) == 1 and not group["is_neg"].iloc[0]:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "warning"
-                    df.loc[group.index, "status_description"] = "Echantillon unique"
+                    df.loc[group.index, "status_description"] = (
+                        "Echantillon unique"
+                    )
             elif len(group) == 1 and group["is_neg"].iloc[0]:
                 if df.loc[group.index, "signature_len"].any() > 0:
                     df.loc[group.index, "status_type"] = "error"
@@ -216,15 +219,21 @@ class IdentityVigilanceService:
                     )
                 elif df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "info"
-                    df.loc[group.index, "status_description"] = "Contrôle négatif"
+                    df.loc[group.index, "status_description"] = (
+                        "Contrôle négatif"
+                    )
             elif group["signature"].nunique() > 1:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "error"
-                    df.loc[group.index, "status_description"] = "Incohérente de SNPs"
+                    df.loc[group.index, "status_description"] = (
+                        "Incohérente de SNPs"
+                    )
             elif group["Genre"].nunique() > 1:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "error"
-                    df.loc[group.index, "status_description"] = "Incohérence de genre"
+                    df.loc[group.index, "status_description"] = (
+                        "Incohérence de genre"
+                    )
 
         return df
 
@@ -236,7 +245,7 @@ class IdentityVigilanceService:
         duplicated = []
         df_filtered = df[df["signature_len"] > 0].copy()
 
-        for sig, group in df_filtered.groupby("signature_hash"):
+        for _sig, group in df_filtered.groupby("signature_hash"):
             if len(group["Patient"].unique()) > 1:
                 duplicated.append(group)
 
@@ -257,9 +266,14 @@ class IdentityVigilanceService:
 
     def _sample_heatmap(self, df: pd.DataFrame) -> pd.DataFrame:
         """Internal method for generating the heatmap data."""
-        allele_columns = self.genetic_analyzer._get_allele_columns() + ["Genre"]
+        allele_columns = [
+            *self.genetic_analyzer._get_allele_columns(),
+            "Genre",
+        ]
         patient_ids = df["Sample Name"].unique()
-        comparison_matrix = pd.DataFrame(index=patient_ids, columns=patient_ids)
+        comparison_matrix = pd.DataFrame(
+            index=patient_ids, columns=patient_ids
+        )
 
         for patient_1 in patient_ids:
             for patient_2 in patient_ids:
@@ -283,9 +297,13 @@ class IdentityVigilanceService:
                         common_alleles += 1
 
                 if total_alleles > 0:
-                    identity_percentage = (common_alleles / total_alleles) * 100
+                    identity_percentage = (
+                        common_alleles / total_alleles
+                    ) * 100
                 else:
                     identity_percentage = pd.NA
-                comparison_matrix.loc[patient_1, patient_2] = identity_percentage
+                comparison_matrix.loc[patient_1, patient_2] = (
+                    identity_percentage
+                )
 
         return comparison_matrix

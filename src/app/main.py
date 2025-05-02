@@ -4,18 +4,20 @@ This module contains the Streamlit application interface and main logic for the 
 identity verification system.
 """
 
-import streamlit as st
-import pandas as pd
-from src.services.identity_vigilance import IdentityVigilanceService
-from src.visualization.plots import (
-    highlight_status,
-    insert_blank_rows_between_groups,
-)
-from src.utils.models import SessionState
 import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
+
+import pandas as pd
+import streamlit as st
+
+from src.services.identity_vigilance import IdentityVigilanceService
+from src.utils.models import SessionState
+from src.visualization.plots import (
+    highlight_status,
+    insert_blank_rows_between_groups,
+)
 
 # Initialize the service
 service = IdentityVigilanceService()

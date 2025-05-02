@@ -4,11 +4,12 @@ This module provides functions for creating visualizations of genetic data, incl
 heatmaps and styled DataFrames.
 """
 
+from typing import List
+
+import numpy as np
 import pandas as pd
 import plotly
-import numpy as np
 from natsort import natsorted
-from typing import List
 
 
 def highlight_status(row: pd.Series) -> List[str]:

@@ -1,8 +1,11 @@
-import pytest
-import pandas as pd
+# ruff: noqa: PLR2004
+
 import numpy as np
+import pandas as pd
+import pytest
+
 from src.data.processing import DataProcessor
-from src.utils.config import REQUIRED_COLUMNS, COLUMNS_TO_DROP
+from src.utils.config import COLUMNS_TO_DROP, REQUIRED_COLUMNS
 
 
 @pytest.fixture
@@ -41,11 +44,10 @@ def sample_data_with_empty_alleles():
                 data[f"Allele {i}"] = ["", "05_T"]
             else:
                 data[f"Allele {i}"] = [f"0{i//2 + 1}_C", f"0{i//2 + 1}_T"]
-        else:  # Second allele of the pair
-            if i == 6:  # Special case for empty allele
-                data[f"Allele {i}"] = ["03_T", ""]
-            else:
-                data[f"Allele {i}"] = [f"0{i//2}_T", f"0{i//2}_C"]
+        elif i == 6:  # Special case for empty allele
+            data[f"Allele {i}"] = ["03_T", ""]
+        else:
+            data[f"Allele {i}"] = [f"0{i//2}_T", f"0{i//2}_C"]
     return pd.DataFrame(data)
 
 
@@ -91,7 +93,14 @@ def test_load_genemapper_data(tmp_path):
                 allele_values.append(f"0{i//2}_T")
         f.write(
             "\t".join(
-                ["file1.txt", "sample1", "panel1", "marker1", "dye1"] + allele_values
+                [
+                    "file1.txt",
+                    "sample1",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
@@ -104,7 +113,14 @@ def test_load_genemapper_data(tmp_path):
                 allele_values.append(f"0{i//2}_C")
         f.write(
             "\t".join(
-                ["file2.txt", "sample2", "panel2", "marker2", "dye2"] + allele_values
+                [
+                    "file2.txt",
+                    "sample2",
+                    "panel2",
+                    "marker2",
+                    "dye2",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
@@ -140,7 +156,14 @@ def test_load_genemapper_data_with_empty_alleles(tmp_path):
                 allele_values.append(f"0{i//2}_T")
         f.write(
             "\t".join(
-                ["file1.txt", "sample1", "panel1", "marker1", "dye1"] + allele_values
+                [
+                    "file1.txt",
+                    "sample1",
+                    "panel1",
+                    "marker1",
+                    "dye1",
+                    *allele_values,
+                ]
             )
             + "\n"
         )
@@ -195,14 +218,20 @@ def test_merge_genotypes(processor):
 
     assert isinstance(merged_df, pd.DataFrame)
     # Check that allele columns are replaced with locus columns
-    allele_cols = [col for col in prepared_df.columns if col.startswith("Allele")]
+    allele_cols = [
+        col for col in prepared_df.columns if col.startswith("Allele")
+    ]
     locus_cols = [col for col in merged_df.columns if col.startswith("Locus")]
     assert len(locus_cols) > 0
     assert len(locus_cols) == len(allele_cols) // 2  # Two alleles per locus
 
     # Check specific genotype merging
-    assert merged_df.loc[0, "Locus 1"] == "C/T"  # From Allele 1=01_C and Allele 2=01_T
-    assert merged_df.loc[1, "Locus 1"] == "T/C"  # From Allele 1=01_T and Allele 2=01_C
+    assert (
+        merged_df.loc[0, "Locus 1"] == "C/T"
+    )  # From Allele 1=01_C and Allele 2=01_T
+    assert (
+        merged_df.loc[1, "Locus 1"] == "T/C"
+    )  # From Allele 1=01_T and Allele 2=01_C
 
 
 def test_merge_genotypes_with_empty_alleles(sample_data_with_empty_alleles):
@@ -212,8 +241,12 @@ def test_merge_genotypes_with_empty_alleles(sample_data_with_empty_alleles):
     merged_df = processor.merge_genotypes(prepared_df)
 
     # Check handling of empty alleles
-    assert merged_df.loc[0, "Locus 3"] == "T"  # From Allele 5="" and Allele 6=03_T
-    assert merged_df.loc[1, "Locus 3"] == "T"  # From Allele 5=05_T and Allele 6=""
+    assert (
+        merged_df.loc[0, "Locus 3"] == "T"
+    )  # From Allele 5="" and Allele 6=03_T
+    assert (
+        merged_df.loc[1, "Locus 3"] == "T"
+    )  # From Allele 5=05_T and Allele 6=""
 
 
 def test_prepare_data_drop_columns(processor, sample_data):

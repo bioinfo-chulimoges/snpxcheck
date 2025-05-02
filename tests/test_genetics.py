@@ -1,5 +1,6 @@
-import pytest
 import pandas as pd
+import pytest
+
 from src.data.genetics import GeneticAnalyzer
 from src.utils.config import (
     GENDER_ALLELES_X,
@@ -12,7 +13,13 @@ from src.utils.config import (
 def sample_data():
     """Create a sample DataFrame with allele data."""
     data = {
-        "Sample Name": ["sample1", "sample2", "sample3", "sample4", "neg_control"],
+        "Sample Name": [
+            "sample1",
+            "sample2",
+            "sample3",
+            "sample4",
+            "neg_control",
+        ],
         "Panel": ["panel1", "panel1", "panel1", "panel1", "panel1"],
         "Marker": ["marker1", "marker1", "marker1", "marker1", "marker1"],
         "Dye": ["dye1", "dye1", "dye1", "dye1", "dye1"],
@@ -95,12 +102,14 @@ def test_determine_sex_missing_columns(analyzer):
 def test_compute_signature_hash(analyzer, sample_data):
     """Test the compute_signature_hash method."""
     # Add signature column for testing
-    sample_data["signature"] = sample_data.apply(analyzer.compute_signature, axis=1)
+    sample_data["signature"] = sample_data.apply(
+        analyzer.compute_signature, axis=1
+    )
 
     # Test hash computation
     hash_value = analyzer.compute_signature_hash(sample_data.iloc[0])
     assert isinstance(hash_value, str)
-    assert len(hash_value) == 40  # SHA-1 hash length
+    assert len(hash_value) == 40  # SHA-1 hash length  # noqa: PLR2004
 
     # Test that same signature gives same hash
     hash1 = analyzer.compute_signature_hash(sample_data.iloc[0])
@@ -156,7 +165,7 @@ def test_prepare_data(analyzer, sample_data):
 
     # Check that hashes are computed correctly
     assert all(
-        isinstance(hash, str) and len(hash) == 40
+        isinstance(hash, str) and len(hash) == 40  # noqa: PLR2004
         for hash in prepared_df["signature_hash"]
     )
 

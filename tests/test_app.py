@@ -1,17 +1,21 @@
-import pandas as pd
-import pytest
-from src.app.main import (
-    render_intra_comparison,
-    render_inter_comparison,
-    render_heatmap,
-    generate_pdf_report,
-    main,
-)
-from src.utils.models import SessionState, ComparisonResult, Metadata
 import warnings
 
+import pandas as pd
+import pytest
+
+from src.app.main import (
+    generate_pdf_report,
+    main,
+    render_heatmap,
+    render_inter_comparison,
+    render_intra_comparison,
+)
+from src.utils.models import ComparisonResult, Metadata, SessionState
+
 # Ignore the setDaemon deprecation warning from kaleido
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="kaleido")
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, module="kaleido"
+)
 
 
 @pytest.fixture

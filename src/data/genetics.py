@@ -4,9 +4,11 @@ This module handles genetic data analysis, including sex determination, signatur
 computation, and control sample identification.
 """
 
-import pandas as pd
-from typing import Tuple
 from hashlib import sha1
+from typing import Tuple
+
+import pandas as pd
+
 from src.utils.config import (
     ALLELE_PREFIX,
     GENDER_ALLELES_X,
@@ -45,8 +47,7 @@ class GeneticAnalyzer:
             col
             for col in self.df.columns
             if col.startswith(ALLELE_PREFIX)
-            and col != GENDER_ALLELES_X
-            and col != GENDER_ALLELES_Y
+            and col not in (GENDER_ALLELES_X, GENDER_ALLELES_Y)
         ]
 
     def determine_sex(self, row: pd.Series) -> str:

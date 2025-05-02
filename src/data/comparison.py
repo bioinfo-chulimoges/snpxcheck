@@ -4,10 +4,12 @@ This module provides functionality for comparing genetic data between samples, i
 intra-patient and inter-patient comparisons.
 """
 
+from typing import List, Optional, Tuple
+
 import pandas as pd
-from typing import List, Tuple, Optional
-from src.data.processing import DataProcessor
+
 from src.data.genetics import GeneticAnalyzer
+from src.data.processing import DataProcessor
 from src.visualization.plots import create_plotly_heatmap
 
 
@@ -74,34 +76,30 @@ class ComparisonEngine:
     def get_intra_column_order(self, df: pd.DataFrame) -> List[str]:
         """Get the column order for intra-patient comparison display."""
         alleles_columns = self.get_alleles_columns(df)
-        return (
-            [
-                "Patient",
-                "Sample Name",
-                "Genre",
-                "status_description",
-            ]
-            + alleles_columns
-            + ["status_type"]
-        )
+        return [
+            "Patient",
+            "Sample Name",
+            "Genre",
+            "status_description",
+            *alleles_columns,
+            "status_type",
+        ]
 
     def get_inter_column_order(self, df: pd.DataFrame) -> List[str]:
         """Get the column order for inter-patient comparison display."""
         locus_columns = self.get_alleles_columns(df)
-        return (
-            [
-                "Patient",
-                "Sample Name",
-                "Genre",
-            ]
-            + locus_columns
-            + ["signature_hash"]
-        )
+        return [
+            "Patient",
+            "Sample Name",
+            "Genre",
+            *locus_columns,
+            "signature_hash",
+        ]
 
     def _intra_comparison(self, df: pd.DataFrame) -> pd.DataFrame:
         """Internal method for intra-patient comparison."""
         df = df.copy()
-        for pid, group in df.groupby("Patient"):
+        for _pid, group in df.groupby("Patient"):
             if len(group) == 1 and not group["is_neg"].iloc[0]:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "warning"
@@ -141,7 +139,7 @@ class ComparisonEngine:
         duplicated = []
         df_filtered = df[df["signature_len"] > 0].copy()
 
-        for sig, group in df_filtered.groupby("signature_hash"):
+        for _sig, group in df_filtered.groupby("signature_hash"):
             if len(group["Patient"].unique()) > 1:
                 duplicated.append(group)
 
@@ -175,7 +173,7 @@ class ComparisonEngine:
 
         for idx, (a1, a2) in enumerate(pairs, start=1):
 
-            def combine(row):
+            def combine(row, a1, a2):
                 val1 = str(row[a1]).strip().split("_")[-1].replace("nan", "")
                 val2 = str(row[a2]).strip().split("_")[-1].replace("nan", "")
                 if not val1 and not val2:
@@ -188,7 +186,9 @@ class ComparisonEngine:
                     return val1
                 return f"{val1}/{val2}"
 
-            merged_data[f"Locus {idx}"] = df.apply(combine, axis=1)
+            merged_data[f"Locus {idx}"] = df.apply(
+                combine, args=(a1, a2), axis=1
+            )
 
         return merged_data
 
@@ -198,8 +198,7 @@ class ComparisonEngine:
             col
             for col in df.columns
             if col.startswith("Allele")
-            and col != "Allele 29"
-            and col != "Allele 30"
+            and col not in {"Allele 29", "Allele 30"}
         ] + ["Genre"]
         patient_ids = df["Sample Name"].unique()
         comparison_matrix = pd.DataFrame(
