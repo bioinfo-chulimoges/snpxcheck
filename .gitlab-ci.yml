@@ -65,9 +65,9 @@ lint:
     - cat docformatter.txt
   artifacts:
     reports:
-      codequality: code-quality-report.json
+      codequality: ruff-code-quality-report.json
     paths:
-      - code-quality-report.json
+      - ruff-code-quality-report.json
       - black.txt
       - docformatter.txt
     expire_in: 1 week
