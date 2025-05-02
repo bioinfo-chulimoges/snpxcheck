@@ -1,7 +1,7 @@
 """Visualization module.
 
-This module provides functions for creating visualizations of genetic data,
-including heatmaps and styled DataFrames.
+This module provides functions for creating visualizations of genetic data, including
+heatmaps and styled DataFrames.
 """
 
 import pandas as pd

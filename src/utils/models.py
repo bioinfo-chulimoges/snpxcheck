@@ -1,7 +1,7 @@
 """Data models for the SNPXPlex Streamlit application.
 
-This module contains the data classes used to structure and store the application's data,
-including comparison results, metadata, and session state.
+This module contains the data classes used to structure and store the application's
+data, including comparison results, metadata, and session state.
 """
 
 from dataclasses import dataclass

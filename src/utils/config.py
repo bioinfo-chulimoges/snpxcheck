@@ -1,7 +1,7 @@
 """Configuration module for the SNPXPlex Streamlit application.
 
-This module contains constants and configurations used in the application,
-including allele prefixes, required columns, and columns to drop.
+This module contains constants and configurations used in the application, including
+allele prefixes, required columns, and columns to drop.
 """
 
 # Prefix used for allele columns

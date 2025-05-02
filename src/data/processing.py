@@ -1,7 +1,7 @@
 """Data processing module for the SNPXPlex Streamlit application.
 
-This module handles the processing and preparation of genetic data,
-including file validation, data loading, and genotype merging.
+This module handles the processing and preparation of genetic data, including file
+validation, data loading, and genotype merging.
 """
 
 import pandas as pd

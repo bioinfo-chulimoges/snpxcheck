@@ -1,7 +1,7 @@
 """Genetic analysis module for the SNPXPlex Streamlit application.
 
-This module handles genetic data analysis, including sex determination,
-signature computation, and control sample identification.
+This module handles genetic data analysis, including sex determination, signature
+computation, and control sample identification.
 """
 
 import pandas as pd
