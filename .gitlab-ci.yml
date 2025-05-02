@@ -79,11 +79,65 @@ docs:
   stage: docs
   script:
     - cd docs
-    - sphinx-build -b html source build
+    # Déterminer la version de la documentation
+    - |
+      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # Si c'est un tag, utiliser le numéro de version
+        VERSION=${CI_COMMIT_TAG#v}
+      else
+        # Sinon, utiliser 'latest'
+        VERSION="latest"
+      fi
+    # Générer la documentation avec la version appropriée
+    - sphinx-build -b html -D version=$VERSION -D release=$VERSION source build
   artifacts:
     paths:
       - docs/build
     expire_in: 1 week
+
+# Job de publication de la documentation
+pages:
+  <<: *setup
+  stage: build
+  script:
+    - cd docs
+    # Déterminer la version de la documentation
+    - |
+      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # Si c'est un tag, utiliser le numéro de version
+        VERSION=${CI_COMMIT_TAG#v}
+        # Créer le dossier de version
+        mkdir -p public/$VERSION
+        # Copier la documentation dans le dossier de version
+        cp -r build/* public/$VERSION/
+      else
+        # Pour la branche main, utiliser 'latest'
+        mkdir -p public/latest
+        cp -r build/* public/latest/
+      fi
+    # Copier uniquement le fichier index.html de la page d'accueil dans le dossier public racine
+    - cp source/_static/index.html public/
+    # Générer le fichier versions.json
+    - |
+      # Récupérer toutes les versions disponibles
+      versions=("latest")
+      for dir in public/*/; do
+        if [ -d "$dir" ]; then
+          version=$(basename "$dir")
+          if [ "$version" != "latest" ]; then
+            versions+=("$version")
+          fi
+        fi
+      done
+      # Créer le fichier versions.json
+      echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > public/versions.json
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
 
 # Job de création du package
 build:
@@ -100,7 +154,4 @@ build:
 workflow:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-    - if: '$CI_COMMIT_BRANCH == "production"'
-    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
-    - if: "$CI_COMMIT_TAG"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

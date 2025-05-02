@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SNPXPlex Streamlit Documentation</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        color: #333;
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 0.5rem;
+      }
+      .version-list {
+        list-style: none;
+        padding: 0;
+      }
+      .version-list li {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
+      .version-list a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .version-list a:hover {
+        text-decoration: underline;
+      }
+      .version-list .latest {
+        background: #e3f2fd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SNPXPlex Streamlit Documentation</h1>
+    <p>
+      Bienvenue dans la documentation de SNPXPlex Streamlit. Choisissez une
+      version :
+    </p>
+
+    <ul class="version-list">
+      <li class="latest">
+        <a href="./latest/index.html">Documentation Latest</a>
+        <p>Version la plus récente (branche main)</p>
+      </li>
+      <!-- Les versions taguées seront ajoutées ici automatiquement par le pipeline CI -->
+    </ul>
+
+    <script>
+      // Fonction pour récupérer les versions disponibles
+      async function fetchVersions() {
+        try {
+          const response = await fetch("./versions.json");
+          const data = await response.json();
+          const versionList = document.querySelector(".version-list");
+
+          // Ajouter les versions taguées
+          data.versions.forEach((version) => {
+            if (version !== "latest") {
+              const li = document.createElement("li");
+              li.innerHTML = `
+                            <a href="./${version}/index.html">Version ${version}</a>
+                            <p>Version taguée ${version}</p>
+                        `;
+              versionList.appendChild(li);
+            }
+          });
+        } catch (error) {
+          console.log("Aucune version taguée disponible");
+        }
+      }
+
+      // Exécuter la fonction au chargement de la page
+      fetchVersions();
+    </script>
+  </body>
+</html>

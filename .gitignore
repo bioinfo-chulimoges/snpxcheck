@@ -28,5 +28,16 @@ env.bak/
 venv.bak/
 .pytest_cache/
 
-# vscode
+# documentation
+docs/build/
+docs/public/
+docs/source/_static/versions.json
+
+# Logs
+*.log
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
