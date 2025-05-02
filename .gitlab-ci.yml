@@ -132,16 +132,13 @@ pages:
       done
       # Créer le fichier versions.json
       echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > ../public/versions.json
-    # Vérifier que les fichiers ont été générés correctement
-    - ls -la ../public/
-    - ls -la ../public/latest/
   artifacts:
     paths:
       - public
     expire_in: 1 week
-  # rules:
-  #   - if: '$CI_COMMIT_BRANCH == "main"'
-  #   - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
 
 # Job de création du package
 build:
