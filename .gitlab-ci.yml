@@ -53,8 +53,8 @@ lint:
   script:
     # Run ruff and show errors in logs
     - echo "Running ruff..."
-    - ruff check src/ tests/ --output-format=gitlab --output-file=ruff.txt || true
-    - cat ruff.txt
+    - ruff check src/ tests/ --output-format=gitlab > ruff-code-quality-report.json
+
     # Run black and show differences in logs
     - echo "Running black..."
     - black --check --skip-string-normalization src/ tests/ --diff > black.txt || true
@@ -65,9 +65,9 @@ lint:
     - cat docformatter.txt
   artifacts:
     reports:
-      codequality: ruff.txt
+      codequality: $CI_PROJECT_DIR/code-quality-report.json
     paths:
-      - ruff.txt
+      - $CI_PROJECT_DIR/code-quality-report.json
       - black.txt
       - docformatter.txt
     expire_in: 1 week
