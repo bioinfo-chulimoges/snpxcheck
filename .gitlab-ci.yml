@@ -12,6 +12,7 @@ stages:
   - lint
   - docs
   - build
+  - deploy
 
 # Variables globales
 variables:
@@ -98,7 +99,7 @@ docs:
 # Job de publication de la documentation
 pages:
   <<: *setup
-  stage: build
+  stage: deploy
   script:
     - cd docs
     # Déterminer la version de la documentation
@@ -131,6 +132,9 @@ pages:
       done
       # Créer le fichier versions.json
       echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > public/versions.json
+    # Vérifier que les fichiers ont été générés correctement
+    - ls -la public/
+    - ls -la public/latest/
   artifacts:
     paths:
       - public
@@ -145,6 +149,9 @@ build:
   stage: build
   script:
     - python setup.py sdist bdist_wheel
+    - ls -alhR .
+    - echo "Dist directory:"
+    - ls -alhR dist/
   artifacts:
     paths:
       - dist/
