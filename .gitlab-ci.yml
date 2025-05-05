@@ -97,6 +97,7 @@ test:
     expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
 
@@ -117,6 +118,7 @@ lint:
   allow_failure: true # Permet au pipeline de continuer même si le linting échoue
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
 
