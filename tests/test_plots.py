@@ -32,9 +32,7 @@ def sample_heatmap_matrix():
         "sample3": [25, 75, 100, 50],
         "sample4": [0, 25, 50, 100],
     }
-    return pd.DataFrame(
-        data, index=["sample1", "sample2", "sample3", "sample4"]
-    )
+    return pd.DataFrame(data, index=["sample1", "sample2", "sample3", "sample4"])
 
 
 def test_create_plotly_heatmap(sample_heatmap_matrix):
@@ -74,9 +72,7 @@ def test_insert_blank_rows_between_groups(sample_comparison_data):
     # Add a group column
     sample_comparison_data["Patient"] = ["A", "A", "B", "B"]
 
-    result_df = insert_blank_rows_between_groups(
-        sample_comparison_data, "Patient"
-    )
+    result_df = insert_blank_rows_between_groups(sample_comparison_data, "Patient")
 
     # Check that the result has more rows than the input
     assert len(result_df) > len(sample_comparison_data)
@@ -88,9 +84,6 @@ def test_insert_blank_rows_between_groups(sample_comparison_data):
     # Check that the blank rows are in the correct positions
     patient_indices = [i for i, x in enumerate(patient_values) if x != ""]
     for i in range(len(patient_indices) - 1):
-        if (
-            patient_values[patient_indices[i]]
-            != patient_values[patient_indices[i + 1]]
-        ):
+        if patient_values[patient_indices[i]] != patient_values[patient_indices[i + 1]]:
             # There should be a blank row between different groups
             assert patient_values[patient_indices[i] + 1] == ""

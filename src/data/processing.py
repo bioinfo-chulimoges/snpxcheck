@@ -59,9 +59,7 @@ class DataProcessor:
                 raise ValueError("Le fichier est vide ou mal formaté.")
             return df
         except Exception as e:
-            raise ValueError(
-                f"Erreur lors de la lecture du fichier : {e}"
-            ) from e
+            raise ValueError(f"Erreur lors de la lecture du fichier : {e}") from e
 
     def prepare_data(self) -> pd.DataFrame:
         """Prepare the data for analysis by removing unnecessary columns.
@@ -82,9 +80,7 @@ class DataProcessor:
         Returns:
             pd.DataFrame: DataFrame with merged genotypes for each locus.
         """
-        keeping_cols = [
-            col for col in df.columns if not col.startswith("Allele")
-        ]
+        keeping_cols = [col for col in df.columns if not col.startswith("Allele")]
         merged_data = df[keeping_cols].copy()
 
         allele_cols = [col for col in df.columns if col.startswith("Allele")]
@@ -108,8 +104,6 @@ class DataProcessor:
                     return val1
                 return f"{val1}/{val2}"
 
-            merged_data[f"Locus {idx}"] = df.apply(
-                combine, args=(a1, a2), axis=1
-            )
+            merged_data[f"Locus {idx}"] = df.apply(combine, args=(a1, a2), axis=1)
 
         return merged_data

@@ -51,9 +51,7 @@ class ReportGenerator:
             str: Path to the saved image file.
         """
         if output_dir is None:
-            with tempfile.NamedTemporaryFile(
-                delete=False, suffix=".png"
-            ) as tmpfile:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
                 fig.write_image(tmpfile.name, width=1200, height=1200)
                 return tmpfile.name
         else:
@@ -107,9 +105,7 @@ class ReportGenerator:
             output_path (str): Path where to save the PDF file.
         """
         css_path = os.path.join(self.template_dir, "styles.css")
-        HTML(string=html_content).write_pdf(
-            output_path, stylesheets=[CSS(css_path)]
-        )
+        HTML(string=html_content).write_pdf(output_path, stylesheets=[CSS(css_path)])
 
     def generate_pdf_report(  # noqa: PLR0913
         self,

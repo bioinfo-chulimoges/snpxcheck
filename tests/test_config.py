@@ -38,9 +38,7 @@ def test_required_columns():
         assert f"Allele {i}" in REQUIRED_COLUMNS
 
     # Check total number of columns
-    assert (
-        len(REQUIRED_COLUMNS) == 5 + 34
-    )  # 5 basic columns + 34 allele columns
+    assert len(REQUIRED_COLUMNS) == 5 + 34  # 5 basic columns + 34 allele columns
 
 
 def test_columns_to_drop():
