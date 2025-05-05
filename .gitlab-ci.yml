@@ -200,12 +200,20 @@ sync_to_github:
       # Synchroniser main
       if [[ $CI_COMMIT_BRANCH == "main" ]]; then
         echo "Syncing main branch to GitHub..."
+        # S'assurer que nous avons la branche main
+        git fetch origin
+        git checkout main
+        # Pousser vers GitHub
         git push github main:main --force
       fi
 
       # Synchroniser production et tag
       if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         echo "Syncing production branch and tag to GitHub..."
+        # S'assurer que nous avons la branche main
+        git fetch origin
+        git checkout production
+        # Pousser vers GitHub
         git push github production:production --force
         git push github ${CI_COMMIT_TAG} --force
       fi
