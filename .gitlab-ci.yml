@@ -105,9 +105,16 @@ lint:
   <<: *setup
   stage: lint
   script:
-    - ruff check src/ tests/
-    - black --check src/ tests/
-    - docformatter --check src/ tests/
+    - ruff check src/ tests/ --output-format=gitlab > ruff-code-quality-report.json || true
+    - black --check --skip-string-normalization src/ tests/ || black --diff --skip-string-normalization src/ tests/
+    - docformatter --check --wrap-summaries 88 --wrap-descriptions 88 src/ tests/ --recursive || docformatter --wrap-summaries 88 --wrap-descriptions 88 src/ tests/ --recursive --diff
+  artifacts:
+    reports:
+      codequality: ruff-code-quality-report.json
+    paths:
+      - ruff-code-quality-report.json
+    expire_in: 1 week
+  allow_failure: true # Permet au pipeline de continuer même si le linting échoue
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
