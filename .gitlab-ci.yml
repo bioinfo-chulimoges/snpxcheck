@@ -8,10 +8,12 @@ cache:
 
 # Définition des stages
 stages:
+  - validate
   - test
   - lint
   - docs
   - deploy
+  - release
 
 # Variables globales
 variables:
@@ -27,6 +29,54 @@ variables:
     - source venv/bin/activate
     - pip install -r requirements.txt
     - pip install pytest pytest-cov ruff black docformatter sphinx sphinx-rtd-theme
+
+# Job de validation de la version
+validate_version:
+  <<: *setup
+  stage: validate
+  script:
+    - |
+      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # Récupérer la version du tag
+        TAG_VERSION=${CI_COMMIT_TAG#v}
+        # Récupérer la version du fichier
+        FILE_VERSION=$(python -c "from src.version import VERSION; print(VERSION)")
+        echo "Tag version: $TAG_VERSION"
+        echo "File version: $FILE_VERSION"
+        # Vérifier que les versions correspondent
+        if [[ "$TAG_VERSION" != "$FILE_VERSION" ]]; then
+          echo "Error: Tag version ($TAG_VERSION) does not match version.py ($FILE_VERSION)"
+          exit 1
+        fi
+        echo "Version validation successful!"
+      else
+        echo "Not a version tag, skipping validation"
+      fi
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
+
+# Job de création de release
+create_release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - |
+      # Extraire les notes de release du CHANGELOG.md
+      VERSION=${CI_COMMIT_TAG#v}
+      RELEASE_NOTES=$(awk -v version="## [$VERSION]" '
+        $0 == version {p=1; next}
+        p && /^## / {p=0}
+        p {print}
+      ' CHANGELOG.md)
+
+      # Créer la release
+      release-cli create --name "Release $VERSION" \
+                        --tag-name $CI_COMMIT_TAG \
+                        --description "$RELEASE_NOTES" \
+                        --assets-link "{\"name\":\"Documentation\",\"url\":\"$CI_PROJECT_URL/-/pages\"}"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
+    - if: '$CI_COMMIT_BRANCH == "production"'
 
 # Job de test
 test:
@@ -102,12 +152,18 @@ pages:
       if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         # Si c'est un tag, utiliser le numéro de version
         VERSION=${CI_COMMIT_TAG#v}
-        # Créer le dossier de version
-        mkdir -p ../public/$VERSION
-        # Copier la documentation dans le dossier de version
-        cp -r build/* ../public/$VERSION/
       else
-        # Pour la branche main, utiliser 'latest'
+        # Sinon, utiliser la version du fichier version.py
+        VERSION=$(python -c "from src.version import VERSION; print(VERSION)")
+      fi
+      echo "Using version: $VERSION"
+    # Créer le dossier de version
+    - mkdir -p ../public/$VERSION
+    # Copier la documentation dans le dossier de version
+    - cp -r build/* ../public/$VERSION/
+    # Pour la branche main, copier aussi dans latest
+    - |
+      if [[ $CI_COMMIT_BRANCH == "main" ]]; then
         mkdir -p ../public/latest
         cp -r build/* ../public/latest/
       fi
@@ -139,4 +195,9 @@ pages:
 workflow:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "production"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
