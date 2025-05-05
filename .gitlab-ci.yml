@@ -191,6 +191,15 @@ pages:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
 
+# Job de déploiement de test
+deploy_test:
+  stage: deploy
+  script:
+    - |
+      echo "Testing deployment for branch: $CI_COMMIT_BRANCH"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "feature/github-sync"'
+
 # Job de synchronisation vers GitHub
 sync_to_github:
   stage: deploy
