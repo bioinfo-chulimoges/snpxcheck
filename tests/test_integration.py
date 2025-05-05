@@ -240,12 +240,8 @@ def test_flow_with_duplicate_samples(service, tmp_path):
 
     # 3. Perform intra-comparison
     df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
-    assert (
-        errors_intra > 0
-    )  # Should detect different signatures for same patient
+    assert errors_intra > 0  # Should detect different signatures for same patient
 
     # 4. Perform inter-comparison
     df_inter, errors_inter = service.perform_inter_comparison(prepared_data)
-    assert (
-        errors_inter > 0
-    )  # Should detect same signature for different patients
+    assert errors_inter > 0  # Should detect same signature for different patients

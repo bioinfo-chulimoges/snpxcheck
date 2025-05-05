@@ -35,9 +35,7 @@ def render_intra_comparison(df_intra: pd.DataFrame, error_count: int):
     """
     st.subheader("Comparaison intra-patient", divider="grey")
     if error_count > 0:
-        st.error(
-            f"Erreur : {error_count} échantillon(s) incohérent(s) détecté(s)."
-        )
+        st.error(f"Erreur : {error_count} échantillon(s) incohérent(s) détecté(s).")
     else:
         st.success("Tous les échantillons sont cohérents.")
 
@@ -65,9 +63,7 @@ def render_inter_comparison(df_inter: pd.DataFrame):
     if df_inter.empty:
         st.success("Tous les échantillons sont cohérents.")
     else:
-        df_display = insert_blank_rows_between_groups(
-            df_inter, "signature_hash"
-        )
+        df_display = insert_blank_rows_between_groups(df_inter, "signature_hash")
         st.error("Incohérence(s) détectée(s) entre les échantillons.")
         st.dataframe(df_display, use_container_width=True, hide_index=True)
 
@@ -98,9 +94,7 @@ def generate_pdf_report(session_state: SessionState) -> Path:
         Path: Path to the generated PDF file.
     """
     if not session_state.comparison_result:
-        st.error(
-            "Aucune donnée ou graphique disponible pour générer le rapport."
-        )
+        st.error("Aucune donnée ou graphique disponible pour générer le rapport.")
         return None
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as pdf_file:
@@ -142,9 +136,7 @@ def main():
         st.session_state.comparison_result = None
 
     with st.sidebar:
-        st.subheader(
-            "Identitovigilance - contrôle d'extraction", divider="rainbow"
-        )
+        st.subheader("Identitovigilance - contrôle d'extraction", divider="rainbow")
 
         # File upload
         uploaded_file = st.file_uploader(
@@ -175,12 +167,8 @@ def main():
         prepared_data = service.prepare_data(df)
 
         # Perform comparisons
-        df_intra, errors_intra = service.perform_intra_comparison(
-            prepared_data
-        )
-        df_inter, errors_inter = service.perform_inter_comparison(
-            prepared_data
-        )
+        df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
+        df_inter, errors_inter = service.perform_inter_comparison(prepared_data)
 
         # Generate heatmap
         heatmap = service.generate_heatmap(prepared_data)
@@ -209,14 +197,10 @@ def main():
         # Add the PDF report generation button in the sidebar
         with st.sidebar:
             if st.button("Générer rapport PDF", type="primary"):
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".pdf"
-                ) as tmp:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                     # Get current date and time
                     current_datetime = datetime.now()
-                    formatted_date = current_datetime.strftime(
-                        "%d/%m/%Y %H:%M"
-                    )
+                    formatted_date = current_datetime.strftime("%d/%m/%Y %H:%M")
 
                     metadata = {
                         "date": formatted_date,
@@ -227,20 +211,12 @@ def main():
                         "serie": serie,
                     }
                     service.generate_pdf_report(
-                        df_intra=st.session_state.comparison_result[
-                            "df_intra"
-                        ],
-                        df_inter=st.session_state.comparison_result[
-                            "df_inter"
-                        ],
+                        df_intra=st.session_state.comparison_result["df_intra"],
+                        df_inter=st.session_state.comparison_result["df_inter"],
                         heatmap=st.session_state.comparison_result["heatmap"],
                         metadata=metadata,
-                        errors_intra=st.session_state.comparison_result[
-                            "errors_intra"
-                        ],
-                        errors_inter=st.session_state.comparison_result[
-                            "errors_inter"
-                        ],
+                        errors_intra=st.session_state.comparison_result["errors_intra"],
+                        errors_inter=st.session_state.comparison_result["errors_inter"],
                         output_path=tmp.name,
                     )
 

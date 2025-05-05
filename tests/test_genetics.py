@@ -102,9 +102,7 @@ def test_determine_sex_missing_columns(analyzer):
 def test_compute_signature_hash(analyzer, sample_data):
     """Test the compute_signature_hash method."""
     # Add signature column for testing
-    sample_data["signature"] = sample_data.apply(
-        analyzer.compute_signature, axis=1
-    )
+    sample_data["signature"] = sample_data.apply(analyzer.compute_signature, axis=1)
 
     # Test hash computation
     hash_value = analyzer.compute_signature_hash(sample_data.iloc[0])

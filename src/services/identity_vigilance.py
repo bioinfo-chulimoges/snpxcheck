@@ -114,9 +114,7 @@ class IdentityVigilanceService:
             df_inter = self.format_inter_comparison(df_inter)
         return df_inter, error_count
 
-    def generate_heatmap(
-        self, prepared_data: pd.DataFrame
-    ) -> Optional[object]:
+    def generate_heatmap(self, prepared_data: pd.DataFrame) -> Optional[object]:
         """Generate the comparison heatmap."""
         comparison_matrix = self._sample_heatmap(prepared_data)
         if not comparison_matrix.empty:
@@ -208,9 +206,7 @@ class IdentityVigilanceService:
             if len(group) == 1 and not group["is_neg"].iloc[0]:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "warning"
-                    df.loc[group.index, "status_description"] = (
-                        "Echantillon unique"
-                    )
+                    df.loc[group.index, "status_description"] = "Echantillon unique"
             elif len(group) == 1 and group["is_neg"].iloc[0]:
                 if df.loc[group.index, "signature_len"].any() > 0:
                     df.loc[group.index, "status_type"] = "error"
@@ -219,21 +215,15 @@ class IdentityVigilanceService:
                     )
                 elif df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "info"
-                    df.loc[group.index, "status_description"] = (
-                        "Contrôle négatif"
-                    )
+                    df.loc[group.index, "status_description"] = "Contrôle négatif"
             elif group["signature"].nunique() > 1:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "error"
-                    df.loc[group.index, "status_description"] = (
-                        "Incohérente de SNPs"
-                    )
+                    df.loc[group.index, "status_description"] = "Incohérente de SNPs"
             elif group["Genre"].nunique() > 1:
                 if df.loc[group.index, "status_type"].unique() == "success":
                     df.loc[group.index, "status_type"] = "error"
-                    df.loc[group.index, "status_description"] = (
-                        "Incohérence de genre"
-                    )
+                    df.loc[group.index, "status_description"] = "Incohérence de genre"
 
         return df
 
@@ -271,9 +261,7 @@ class IdentityVigilanceService:
             "Genre",
         ]
         patient_ids = df["Sample Name"].unique()
-        comparison_matrix = pd.DataFrame(
-            index=patient_ids, columns=patient_ids
-        )
+        comparison_matrix = pd.DataFrame(index=patient_ids, columns=patient_ids)
 
         for patient_1 in patient_ids:
             for patient_2 in patient_ids:
@@ -297,13 +285,9 @@ class IdentityVigilanceService:
                         common_alleles += 1
 
                 if total_alleles > 0:
-                    identity_percentage = (
-                        common_alleles / total_alleles
-                    ) * 100
+                    identity_percentage = (common_alleles / total_alleles) * 100
                 else:
                     identity_percentage = pd.NA
-                comparison_matrix.loc[patient_1, patient_2] = (
-                    identity_percentage
-                )
+                comparison_matrix.loc[patient_1, patient_2] = identity_percentage
 
         return comparison_matrix

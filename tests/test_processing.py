@@ -218,20 +218,14 @@ def test_merge_genotypes(processor):
 
     assert isinstance(merged_df, pd.DataFrame)
     # Check that allele columns are replaced with locus columns
-    allele_cols = [
-        col for col in prepared_df.columns if col.startswith("Allele")
-    ]
+    allele_cols = [col for col in prepared_df.columns if col.startswith("Allele")]
     locus_cols = [col for col in merged_df.columns if col.startswith("Locus")]
     assert len(locus_cols) > 0
     assert len(locus_cols) == len(allele_cols) // 2  # Two alleles per locus
 
     # Check specific genotype merging
-    assert (
-        merged_df.loc[0, "Locus 1"] == "C/T"
-    )  # From Allele 1=01_C and Allele 2=01_T
-    assert (
-        merged_df.loc[1, "Locus 1"] == "T/C"
-    )  # From Allele 1=01_T and Allele 2=01_C
+    assert merged_df.loc[0, "Locus 1"] == "C/T"  # From Allele 1=01_C and Allele 2=01_T
+    assert merged_df.loc[1, "Locus 1"] == "T/C"  # From Allele 1=01_T and Allele 2=01_C
 
 
 def test_merge_genotypes_with_empty_alleles(sample_data_with_empty_alleles):
@@ -241,12 +235,8 @@ def test_merge_genotypes_with_empty_alleles(sample_data_with_empty_alleles):
     merged_df = processor.merge_genotypes(prepared_df)
 
     # Check handling of empty alleles
-    assert (
-        merged_df.loc[0, "Locus 3"] == "T"
-    )  # From Allele 5="" and Allele 6=03_T
-    assert (
-        merged_df.loc[1, "Locus 3"] == "T"
-    )  # From Allele 5=05_T and Allele 6=""
+    assert merged_df.loc[0, "Locus 3"] == "T"  # From Allele 5="" and Allele 6=03_T
+    assert merged_df.loc[1, "Locus 3"] == "T"  # From Allele 5=05_T and Allele 6=""
 
 
 def test_prepare_data_drop_columns(processor, sample_data):

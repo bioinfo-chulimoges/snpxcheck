@@ -87,9 +87,7 @@ def test_save_heatmap_as_image(report_generator, sample_data, tmp_path):
 def test_generate_html_report(report_generator, sample_data, tmp_path):
     """Test generating the HTML report."""
     # Save heatmap first
-    heatmap_path = report_generator.save_heatmap_as_image(
-        sample_data["heatmap"]
-    )
+    heatmap_path = report_generator.save_heatmap_as_image(sample_data["heatmap"])
 
     html_content = report_generator.generate_html_report(
         df_intra=sample_data["df_intra"],
@@ -114,9 +112,7 @@ def test_generate_html_report(report_generator, sample_data, tmp_path):
 def test_save_pdf_from_html(report_generator, sample_data, tmp_path):
     """Test converting HTML to PDF."""
     # Generate HTML content first
-    heatmap_path = report_generator.save_heatmap_as_image(
-        sample_data["heatmap"]
-    )
+    heatmap_path = report_generator.save_heatmap_as_image(sample_data["heatmap"])
     html_content = report_generator.generate_html_report(
         df_intra=sample_data["df_intra"],
         df_inter=sample_data["df_inter"],
