@@ -3,7 +3,7 @@ import warnings
 import pandas as pd
 import pytest
 
-from src.app.main import (
+from main import (
     generate_pdf_report,
     main,
     render_heatmap,

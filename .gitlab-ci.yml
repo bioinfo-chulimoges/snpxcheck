@@ -129,6 +129,11 @@ docs:
   script:
     - cd docs
     - sphinx-build -b html source build
+    - cd .. # Retour à la racine
+  artifacts:
+    paths:
+      - docs/build/
+    expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
 
@@ -137,7 +142,6 @@ pages:
   <<: *setup
   stage: deploy
   script:
-    - cd docs
     # Déterminer la version de la documentation
     - |
       if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -149,22 +153,22 @@ pages:
       fi
       echo "Using version: $VERSION"
     # Créer le dossier de version
-    - mkdir -p ../public/$VERSION
+    - mkdir -p public/$VERSION
     # Copier la documentation dans le dossier de version
-    - cp -r build/* ../public/$VERSION/
+    - cp -r docs/build/* public/$VERSION/
     # Pour la branche main, copier aussi dans latest
     - |
       if [[ $CI_COMMIT_BRANCH == "main" ]]; then
-        mkdir -p ../public/latest
-        cp -r build/* ../public/latest/
+        mkdir -p public/latest
+        cp -r docs/build/* public/latest/
       fi
     # Copier uniquement le fichier index.html de la page d'accueil dans le dossier public racine
-    - cp source/_static/index.html ../public/
+    - cp docs/source/_static/index.html public/
     # Générer le fichier versions.json
     - |
       # Récupérer toutes les versions disponibles
       versions=("latest")
-      for dir in ../public/*/; do
+      for dir in public/*/; do
         if [ -d "$dir" ]; then
           version=$(basename "$dir")
           if [ "$version" != "latest" ]; then
@@ -173,7 +177,11 @@ pages:
         fi
       done
       # Créer le fichier versions.json
-      echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > ../public/versions.json
+      echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > public/versions.json
+  artifacts:
+    paths:
+      - public/
+    expire_in: never
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
 
@@ -192,12 +200,20 @@ sync_to_github:
       # Synchroniser main
       if [[ $CI_COMMIT_BRANCH == "main" ]]; then
         echo "Syncing main branch to GitHub..."
+        # S'assurer que nous avons la branche main
+        git fetch origin
+        git checkout main
+        # Pousser vers GitHub
         git push github main:main --force
       fi
 
       # Synchroniser production et tag
       if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         echo "Syncing production branch and tag to GitHub..."
+        # S'assurer que nous avons la branche main
+        git fetch origin
+        git checkout production
+        # Pousser vers GitHub
         git push github production:production --force
         git push github ${CI_COMMIT_TAG} --force
       fi
