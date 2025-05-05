@@ -95,51 +95,33 @@ test:
       - coverage.xml
       - test-results.xml
     expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 # Job de vérification du style de code
 lint:
   <<: *setup
   stage: lint
   script:
-    # Run ruff and show errors in logs
-    - echo "Running ruff..."
-    - ruff check src/ tests/ --output-format=gitlab > ruff-code-quality-report.json || true
-    - cat ruff-code-quality-report.json
-    # Run black and show differences in logs
-    - echo "Running black..."
-    - black --check --skip-string-normalization src/ tests/ || black --diff --skip-string-normalization src/ tests/
-    # Run docformatter and show differences in logs
-    - echo "Running docformatter..."
-    - docformatter --check --wrap-summaries 88 --wrap-descriptions 88 src/ tests/ --recursive || docformatter --wrap-summaries 88 --wrap-descriptions 88 src/ tests/ --recursive --diff
-  artifacts:
-    reports:
-      codequality: ruff-code-quality-report.json
-    paths:
-      - ruff-code-quality-report.json
-    expire_in: 1 week
-  allow_failure: true # Permet au pipeline de continuer même si le linting échoue
+    - ruff check src/ tests/
+    - black --check src/ tests/
+    - docformatter --check src/ tests/
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
-# Job de génération de documentation
+# Job de documentation
 docs:
   <<: *setup
   stage: docs
   script:
     - cd docs
-    # Déterminer la version de la documentation
-    - |
-      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        # Si c'est un tag, utiliser le numéro de version
-        VERSION=${CI_COMMIT_TAG#v}
-      else
-        # Sinon, utiliser 'latest'
-        VERSION="latest"
-      fi
-    # Générer la documentation avec la version appropriée
-    - sphinx-build -b html -D version=$VERSION -D release=$VERSION source build
-  artifacts:
-    paths:
-      - docs/build
-    expire_in: 1 week
+    - sphinx-build -b html source build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 # Job de publication de la documentation
 pages:
@@ -183,13 +165,8 @@ pages:
       done
       # Créer le fichier versions.json
       echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > ../public/versions.json
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
 
 # Job de synchronisation vers GitHub
 sync_to_github:
