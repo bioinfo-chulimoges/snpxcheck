@@ -215,6 +215,10 @@ sync_to_github:
       # Pour le test, on peut synchroniser n'importe quelle branche
       if [[ $CI_COMMIT_BRANCH == "feature/github-sync" ]]; then
         echo "Testing sync with branch: $CI_COMMIT_BRANCH"
+        # S'assurer que nous avons la branche
+        git fetch origin
+        git checkout $CI_COMMIT_BRANCH
+        # Pousser vers GitHub
         git push github $CI_COMMIT_BRANCH:$CI_COMMIT_BRANCH --force
       fi
 
