@@ -210,7 +210,7 @@ sync_to_github:
       git config --global user.email "ci@gitlab.com"
 
       # Ajouter le remote GitHub
-      git remote add github https://${GITHUB_TOKEN}@github.com/bioinfo-chulimoges/snpxcheck
+      git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_ORG/$GITHUB_REPO.git
 
       # Pour le test, on peut synchroniser n'importe quelle branche
       if [[ $CI_COMMIT_BRANCH == "feature/github-sync" ]]; then
