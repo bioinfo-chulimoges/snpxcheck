@@ -1,7 +1,7 @@
 """Data processing and analysis module.
 
-This package provides functionality for processing and analyzing genetic data,
-including data loading, validation, comparison, and genetic analysis.
+This package provides functionality for processing and analyzing genetic data, including
+data loading, validation, comparison, and genetic analysis.
 """
 
 from src.data.comparison import ComparisonEngine
