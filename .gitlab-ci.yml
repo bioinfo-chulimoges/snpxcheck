@@ -219,7 +219,7 @@ sync_to_github:
         git fetch origin
         git checkout $CI_COMMIT_BRANCH
         # Pousser vers GitHub
-        git push github $CI_COMMIT_BRANCH:$CI_COMMIT_BRANCH --force
+        git push --force --prune github $CI_COMMIT_BRANCH:$CI_COMMIT_BRANCH
       fi
 
       # Synchroniser main
