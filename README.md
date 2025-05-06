@@ -1,10 +1,10 @@
-# SNPXPlex Streamlit
+# SNPXCheck
 
 Application web pour l'analyse génétique des données SNPXPlex.
 
 ## Description
 
-SNPXPlex Streamlit est une application web qui permet d'analyser et de comparer des données génétiques issues de la plateforme SNPXPlex. Elle offre une interface intuitive pour :
+SNPXCheck est une application web qui permet d'analyser et de comparer des données génétiques issues de la plateforme SNPXPlex. Elle offre une interface intuitive pour :
 
 - Charger et valider des fichiers Genemapper
 - Effectuer des analyses intra et inter-patients
