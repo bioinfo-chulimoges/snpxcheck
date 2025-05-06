@@ -8,8 +8,7 @@ SNPXCheck est une application web qui permet d'analyser et de comparer des donn�
 
 - Charger et valider des fichiers Genemapper
 - Effectuer des analyses intra et inter-patients
-- Générer des visualisations (heatmaps)
-- Produire des rapports PDF détaillés
+- Produire un rapport PDF
 
 ## Installation
 
@@ -38,6 +37,9 @@ SNPXCheck est une application web qui permet d'analyser et de comparer des donn�
    ```bash
    pip install -r requirements.txt
    ```
+   ```bash
+   apt install -r packages.txt
+   ```
 
 4. Installez l'application :
    ```bash
@@ -48,7 +50,7 @@ SNPXCheck est une application web qui permet d'analyser et de comparer des donn�
 
 Pour lancer l'application :
 ```bash
-streamlit run src/app/main.py
+streamlit run main.py
 ```
 
 ## Documentation
@@ -66,37 +68,6 @@ Pour exécuter les tests :
 ```bash
 pytest
 ```
-
-Pour générer un rapport de couverture :
-```bash
-pytest --cov=src tests/
-```
-
-## Structure du projet
-
-```
-snpxplex_streamlit/
-├── src/
-│   ├── app/           # Application Streamlit
-│   ├── data/          # Traitement des données
-│   ├── services/      # Services métier
-│   ├── utils/         # Utilitaires
-│   ├── visualization/ # Visualisation
-│   └── reporting/     # Génération de rapports
-├── tests/             # Tests unitaires
-├── docs/              # Documentation
-├── requirements.txt   # Dépendances
-└── setup.py          # Configuration du package
-```
-
-## Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à :
-1. Forker le projet
-2. Créer une branche pour votre fonctionnalité
-3. Commiter vos changements
-4. Pousser vers la branche
-5. Ouvrir une Pull Request
 
 ## Licence
 
