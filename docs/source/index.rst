@@ -12,7 +12,7 @@ SNPXCheck est une application web pour l'analyse génétique des données SNPXPl
    usage
 
 Indices et tables
-================
+=================
 
 * :ref:`genindex`
 * :ref:`modindex`
