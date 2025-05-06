@@ -136,7 +136,7 @@ def main():
         st.session_state.comparison_result = None
 
     with st.sidebar:
-        st.subheader("Identitovigilance - contrôle d'extraction", divider="rainbow")
+        st.header("SNPXCheck - Identitovigilance", divider="rainbow")
 
         # File upload
         uploaded_file = st.file_uploader(
@@ -183,7 +183,7 @@ def main():
         }
 
         # Display results
-        st.subheader("Résultats de l'analyse")
+        # st.subheader("Résultats de l'analyse")
 
         # Intra-patient comparison
         render_intra_comparison(df_intra, errors_intra)
