@@ -197,45 +197,54 @@ def main():
 
         # Add the PDF report generation button in the sidebar
         with st.sidebar:
-            if st.button("Générer rapport PDF", type="primary"):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    # Get current date and time
-                    current_datetime = datetime.now()
-                    formatted_date = current_datetime.strftime("%d/%m/%Y %H:%M")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Générer rapport PDF", type="primary"):
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, suffix=".pdf"
+                    ) as tmp:
+                        # Get current date and time
+                        current_datetime = datetime.now()
+                        formatted_date = current_datetime.strftime("%d/%m/%Y %H:%M")
 
-                    metadata = {
-                        "date": formatted_date,
-                        "filename": uploaded_file.name,
-                        "interpreter": interpreter,
-                        "week": extraction_week,
-                        "comment": comment,
-                        "serie": serie,
-                    }
-                    service.generate_pdf_report(
-                        df_intra=st.session_state.comparison_result["df_intra"],
-                        df_inter=st.session_state.comparison_result["df_inter"],
-                        heatmap=st.session_state.comparison_result["heatmap"],
-                        metadata=metadata,
-                        errors_intra=st.session_state.comparison_result["errors_intra"],
-                        errors_inter=st.session_state.comparison_result["errors_inter"],
-                        output_path=tmp.name,
-                    )
+                        metadata = {
+                            "date": formatted_date,
+                            "filename": uploaded_file.name,
+                            "interpreter": interpreter,
+                            "week": extraction_week,
+                            "comment": comment,
+                            "serie": serie,
+                        }
+                        service.generate_pdf_report(
+                            df_intra=st.session_state.comparison_result["df_intra"],
+                            df_inter=st.session_state.comparison_result["df_inter"],
+                            heatmap=st.session_state.comparison_result["heatmap"],
+                            metadata=metadata,
+                            errors_intra=st.session_state.comparison_result[
+                                "errors_intra"
+                            ],
+                            errors_inter=st.session_state.comparison_result[
+                                "errors_inter"
+                            ],
+                            output_path=tmp.name,
+                        )
 
-                    # Read the PDF file
-                    with open(tmp.name, "rb") as f:
-                        pdf_data = f.read()
+                        # Read the PDF file
+                        with open(tmp.name, "rb") as f:
+                            pdf_data = f.read()
 
-                    # Create download button that opens the PDF directly
-                    st.download_button(
-                        label="Ouvrir le rapport PDF",
-                        data=pdf_data,
-                        file_name="rapport_identite.pdf",
-                        mime="application/pdf",
-                        use_container_width=True,
-                    )
+                        # Create download button that opens the PDF directly
+                        with col2:
+                            st.download_button(
+                                label="Ouvrir le rapport PDF",
+                                data=pdf_data,
+                                file_name="rapport_identite.pdf",
+                                mime="application/pdf",
+                                use_container_width=True,
+                            )
 
-                    # Clean up
-                    os.unlink(tmp.name)
+                        # Clean up
+                        os.unlink(tmp.name)
 
     footer_html = f"""<div style='margin-top: 50px; text-align: center;'>
     <p>SNPXCheck - Identitovigilance - v{VERSION}</p>
