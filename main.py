@@ -14,6 +14,7 @@ import streamlit as st
 
 from src.services.identity_vigilance import IdentityVigilanceService
 from src.utils.models import SessionState
+from src.version import VERSION
 from src.visualization.plots import (
     highlight_status,
     insert_blank_rows_between_groups,
@@ -235,6 +236,11 @@ def main():
 
                     # Clean up
                     os.unlink(tmp.name)
+
+    footer_html = f"""<div style='margin-top: 50px; text-align: center;'>
+    <p>SNPXCheck - Identitovigilance - v{VERSION}</p>
+    </div>"""
+    st.markdown(footer_html, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
