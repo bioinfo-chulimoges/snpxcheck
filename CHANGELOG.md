@@ -8,3 +8,4 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 - Interface Streamlit
 - Documentation Sphinx
 - Pipeline CI/CD 
+- LICENSE

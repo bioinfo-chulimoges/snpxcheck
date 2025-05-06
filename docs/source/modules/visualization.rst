@@ -1,5 +1,5 @@
 Visualization
-============
+=============
  
 .. automodule:: src.visualization.plots
    :members:

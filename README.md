@@ -1,15 +1,14 @@
-# SNPXPlex Streamlit
+# SNPXCheck
 
 Application web pour l'analyse génétique des données SNPXPlex.
 
 ## Description
 
-SNPXPlex Streamlit est une application web qui permet d'analyser et de comparer des données génétiques issues de la plateforme SNPXPlex. Elle offre une interface intuitive pour :
+SNPXCheck est une application web qui permet d'analyser et de comparer des données génétiques issues de la plateforme SNPXPlex. Elle offre une interface intuitive pour :
 
 - Charger et valider des fichiers Genemapper
 - Effectuer des analyses intra et inter-patients
-- Générer des visualisations (heatmaps)
-- Produire des rapports PDF détaillés
+- Produire un rapport PDF
 
 ## Installation
 
@@ -38,6 +37,9 @@ SNPXPlex Streamlit est une application web qui permet d'analyser et de comparer 
    ```bash
    pip install -r requirements.txt
    ```
+   ```bash
+   apt install -r packages.txt
+   ```
 
 4. Installez l'application :
    ```bash
@@ -48,7 +50,7 @@ SNPXPlex Streamlit est une application web qui permet d'analyser et de comparer 
 
 Pour lancer l'application :
 ```bash
-streamlit run src/app/main.py
+streamlit run main.py
 ```
 
 ## Documentation
@@ -67,37 +69,6 @@ Pour exécuter les tests :
 pytest
 ```
 
-Pour générer un rapport de couverture :
-```bash
-pytest --cov=src tests/
-```
-
-## Structure du projet
-
-```
-snpxplex_streamlit/
-├── src/
-│   ├── app/           # Application Streamlit
-│   ├── data/          # Traitement des données
-│   ├── services/      # Services métier
-│   ├── utils/         # Utilitaires
-│   ├── visualization/ # Visualisation
-│   └── reporting/     # Génération de rapports
-├── tests/             # Tests unitaires
-├── docs/              # Documentation
-├── requirements.txt   # Dépendances
-└── setup.py          # Configuration du package
-```
-
-## Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à :
-1. Forker le projet
-2. Créer une branche pour votre fonctionnalité
-3. Commiter vos changements
-4. Pousser vers la branche
-5. Ouvrir une Pull Request
-
 ## Licence
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails. 
+Ce projet est sous licence CeCILL-B. Voir le fichier `LICENSE` pour plus de détails.

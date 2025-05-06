@@ -1,5 +1,5 @@
 Installation
-===========
+============
 
 Prérequis
 ---------
@@ -8,14 +8,14 @@ Prérequis
 - pip (gestionnaire de paquets Python)
 
 Installation
------------
+------------
 
 1. Clonez le dépôt :
 
 .. code-block:: bash
 
-   git clone https://gitlab.com/your-username/snpxplex_streamlit.git
-   cd snpxplex_streamlit
+   git clone https://gitlab.com/UFBioinformatique_CHULimoges/snpxcheck.git
+   cd snpxcheck
 
 2. Créez un environnement virtuel :
 
@@ -31,6 +31,7 @@ Installation
 .. code-block:: bash
 
    pip install -r requirements.txt
+   apt install -r packages.txt
 
 4. Installez l'application :
 
@@ -45,4 +46,4 @@ Pour lancer l'application :
 
 .. code-block:: bash
 
-   streamlit run src/app/main.py 
+   streamlit run main.py 

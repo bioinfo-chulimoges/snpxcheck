@@ -1,7 +1,7 @@
-SNPXPlex Streamlit
-==================
+SNPXCheck
+=========
 
-SNPXPlex Streamlit est une application web pour l'analyse génétique des données SNPXPlex.
+SNPXCheck est une application web pour l'analyse génétique des données SNPXPlex.
 
 .. toctree::
    :maxdepth: 2
@@ -12,7 +12,7 @@ SNPXPlex Streamlit est une application web pour l'analyse génétique des donné
    usage
 
 Indices et tables
-================
+=================
 
 * :ref:`genindex`
 * :ref:`modindex`
