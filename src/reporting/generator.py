@@ -13,6 +13,8 @@ import plotly
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import CSS, HTML
 
+from src.version import VERSION
+
 
 class ReportGenerator:
     """Class responsible for generating analysis reports.
@@ -95,6 +97,7 @@ class ReportGenerator:
             heatmap_path=fig_path,
             errors_intra=errors_intra,
             errors_inter=errors_inter,
+            version=VERSION,
         )
 
     def save_pdf_from_html(self, html_content: str, output_path: str):

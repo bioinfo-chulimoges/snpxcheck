@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
 # Project information
-project = 'SNPXPlex Streamlit'
+project = 'SNPXCheck'
 copyright = '2024, Paco'
 author = 'Paco'
 

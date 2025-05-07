@@ -57,4 +57,9 @@ skip-string-normalization = true
 
 [tool.docformatter]
 wrap-summaries = 88
-wrap-descriptions = 88 
+wrap-descriptions = 88
+
+[tool.pytest]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"] 

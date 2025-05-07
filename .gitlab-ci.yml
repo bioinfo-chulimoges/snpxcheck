@@ -8,10 +8,12 @@ cache:
 
 # Définition des stages
 stages:
+  - validate
   - test
   - lint
   - docs
   - deploy
+  - release
 
 # Variables globales
 variables:
@@ -27,6 +29,54 @@ variables:
     - source venv/bin/activate
     - pip install -r requirements.txt
     - pip install pytest pytest-cov ruff black docformatter sphinx sphinx-rtd-theme
+
+# Job de validation de la version
+validate_version:
+  <<: *setup
+  stage: validate
+  script:
+    - |
+      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # Récupérer la version du tag
+        TAG_VERSION=${CI_COMMIT_TAG#v}
+        # Récupérer la version du fichier
+        FILE_VERSION=$(python -c "from src.version import VERSION; print(VERSION)")
+        echo "Tag version: $TAG_VERSION"
+        echo "File version: $FILE_VERSION"
+        # Vérifier que les versions correspondent
+        if [[ "$TAG_VERSION" != "$FILE_VERSION" ]]; then
+          echo "Error: Tag version ($TAG_VERSION) does not match version.py ($FILE_VERSION)"
+          exit 1
+        fi
+        echo "Version validation successful!"
+      else
+        echo "Not a version tag, skipping validation"
+      fi
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
+
+# Job de création de release
+create_release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - |
+      # Extraire les notes de release du CHANGELOG.md
+      VERSION=${CI_COMMIT_TAG#v}
+      RELEASE_NOTES=$(awk -v version="## [$VERSION]" '
+        $0 == version {p=1; next}
+        p && /^## / {p=0}
+        p {print}
+      ' CHANGELOG.md)
+
+      # Créer la release
+      release-cli create --name "Release $VERSION" \
+                        --tag-name $CI_COMMIT_TAG \
+                        --description "$RELEASE_NOTES" \
+                        --assets-link "{\"name\":\"Documentation\",\"url\":\"$CI_PROJECT_URL/-/pages\"}"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
+    - if: '$CI_COMMIT_BRANCH == "production"'
 
 # Job de test
 test:
@@ -45,21 +95,19 @@ test:
       - coverage.xml
       - test-results.xml
     expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 # Job de vérification du style de code
 lint:
   <<: *setup
   stage: lint
   script:
-    # Run ruff and show errors in logs
-    - echo "Running ruff..."
     - ruff check src/ tests/ --output-format=gitlab > ruff-code-quality-report.json || true
-    - cat ruff-code-quality-report.json
-    # Run black and show differences in logs
-    - echo "Running black..."
     - black --check --skip-string-normalization src/ tests/ || black --diff --skip-string-normalization src/ tests/
-    # Run docformatter and show differences in logs
-    - echo "Running docformatter..."
     - docformatter --check --wrap-summaries 88 --wrap-descriptions 88 src/ tests/ --recursive || docformatter --wrap-summaries 88 --wrap-descriptions 88 src/ tests/ --recursive --diff
   artifacts:
     reports:
@@ -68,56 +116,59 @@ lint:
       - ruff-code-quality-report.json
     expire_in: 1 week
   allow_failure: true # Permet au pipeline de continuer même si le linting échoue
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
-# Job de génération de documentation
+# Job de documentation
 docs:
   <<: *setup
   stage: docs
   script:
     - cd docs
-    # Déterminer la version de la documentation
-    - |
-      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        # Si c'est un tag, utiliser le numéro de version
-        VERSION=${CI_COMMIT_TAG#v}
-      else
-        # Sinon, utiliser 'latest'
-        VERSION="latest"
-      fi
-    # Générer la documentation avec la version appropriée
-    - sphinx-build -b html -D version=$VERSION -D release=$VERSION source build
+    - sphinx-build -b html source build
+    - cd .. # Retour à la racine
   artifacts:
     paths:
-      - docs/build
+      - docs/build/
     expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 # Job de publication de la documentation
 pages:
   <<: *setup
   stage: deploy
   script:
-    - cd docs
     # Déterminer la version de la documentation
     - |
       if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         # Si c'est un tag, utiliser le numéro de version
         VERSION=${CI_COMMIT_TAG#v}
-        # Créer le dossier de version
-        mkdir -p ../public/$VERSION
-        # Copier la documentation dans le dossier de version
-        cp -r build/* ../public/$VERSION/
       else
-        # Pour la branche main, utiliser 'latest'
-        mkdir -p ../public/latest
-        cp -r build/* ../public/latest/
+        # Sinon, utiliser la version du fichier version.py
+        VERSION=$(python -c "from src.version import VERSION; print(VERSION)")
+      fi
+      echo "Using version: $VERSION"
+    # Créer le dossier de version
+    - mkdir -p public/$VERSION
+    # Copier la documentation dans le dossier de version
+    - cp -r docs/build/* public/$VERSION/
+    # Pour la branche main, copier aussi dans latest
+    - |
+      if [[ $CI_COMMIT_BRANCH == "main" ]]; then
+        mkdir -p public/latest
+        cp -r docs/build/* public/latest/
       fi
     # Copier uniquement le fichier index.html de la page d'accueil dans le dossier public racine
-    - cp source/_static/index.html ../public/
+    - cp docs/source/_static/index.html public/
     # Générer le fichier versions.json
     - |
       # Récupérer toutes les versions disponibles
       versions=("latest")
-      for dir in ../public/*/; do
+      for dir in public/*/; do
         if [ -d "$dir" ]; then
           version=$(basename "$dir")
           if [ "$version" != "latest" ]; then
@@ -126,11 +177,46 @@ pages:
         fi
       done
       # Créer le fichier versions.json
-      echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > ../public/versions.json
+      echo "{\"versions\": [$(printf '"%s",' "${versions[@]}" | sed 's/,$//')]}" > public/versions.json
   artifacts:
     paths:
-      - public
-    expire_in: 1 week
+      - public/
+    expire_in: never
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Job de synchronisation vers GitHub
+sync_to_github:
+  stage: deploy
+  script:
+    - |
+      # Configurer Git
+      git config --global user.name "GitLab CI"
+      git config --global user.email "ci@gitlab.com"
+
+      # Ajouter le remote GitHub
+      git remote add github https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_ORG/$GITHUB_REPO.git
+
+      # Synchroniser main
+      if [[ $CI_COMMIT_BRANCH == "main" ]]; then
+        echo "Syncing main branch to GitHub..."
+        # S'assurer que nous avons la branche main
+        git fetch origin
+        git checkout main
+        # Pousser vers GitHub
+        git push github main:main --force
+      fi
+
+      # Synchroniser production et tag
+      if [[ $CI_COMMIT_TAG =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Syncing production branch and tag to GitHub..."
+        # S'assurer que nous avons la branche main
+        git fetch origin
+        git checkout production
+        # Pousser vers GitHub
+        git push github production:production --force
+        git push github ${CI_COMMIT_TAG} --force
+      fi
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'
@@ -139,4 +225,8 @@ pages:
 workflow:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "production"'
+    - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+$/'

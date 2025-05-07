@@ -81,6 +81,17 @@ img.heatmap {
 @page {
     size: A4;
     margin: 0.5cm;
+    
+    @bottom-left {
+        content: "SNPXCheck - Identitovigilance - " var(--version);
+        font-size: 9px;
+        color: #666;
+    }
+    @bottom-center {
+        content: "Service de Biochimie - Génétique Moléculaire";
+        font-size: 9px;
+        color: #666;
+    }
     @bottom-right {
         content: "Page " counter(page) " / " counter(pages);
         font-size: 9px;
