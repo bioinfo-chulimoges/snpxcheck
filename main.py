@@ -147,11 +147,11 @@ def main():
         interpreter = st.text_input("Interprétateur :", "")
         extraction_week = st.text_input("Semaine d'extraction :", "")
         comment = st.text_area("Commentaire :", "")
-        serie = st.selectbox(
-            "Série validée ?",
+        serie = st.radio(
+            "Série conforme ?",
             ("Oui", "Non"),
             index=None,
-            placeholder="",
+            horizontal=True,
         )
 
         # Add a separator
