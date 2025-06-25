@@ -96,6 +96,7 @@ test:
       - test-results.xml
     expire_in: 1 week
   rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\/.*/'
     - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*/'
     - if: '$CI_COMMIT_BRANCH =~ /^hotfix\/.*/'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
