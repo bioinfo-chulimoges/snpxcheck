@@ -44,12 +44,5 @@
     <div class="success">Tous les échantillons sont cohérents.</div>
     {% endif %}
     <div class="table-container">{{ df_inter | safe }}</div>
-
-    {% if heatmap_path %}
-    <h2>Heatmap</h2>
-    <div class="heatmap-container">
-      <img class="heatmap" src="{{ heatmap_path }}" alt="Heatmap" />
-    </div>
-    {% endif %}
   </body>
 </html>

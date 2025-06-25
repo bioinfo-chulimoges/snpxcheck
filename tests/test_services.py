@@ -108,12 +108,51 @@ def test_perform_intra_comparison(service, sample_genemapper_data):
     service.data_processor = service.data_processor.__class__(sample_genemapper_data)
     prepared_data = service.prepare_data(sample_genemapper_data)
 
-    df_intra, error_count = service.perform_intra_comparison(prepared_data)
+    df_intra, error_count, neg_control_is_clean = service.perform_intra_comparison(
+        prepared_data
+    )
 
     assert isinstance(df_intra, pd.DataFrame)
     assert isinstance(error_count, int)
+    assert isinstance(neg_control_is_clean, bool)
     assert "status_type" in df_intra.columns
     assert "status_description" in df_intra.columns
+
+
+def test_perform_intra_comparison_clean_neg_control(service):
+    """Test intra-patient comparison with a clean negative control."""
+    data = {
+        "Sample Name": ["S1", "S1_dup", "neg"],
+        "Patient": ["P1", "P1", "neg"],
+        "signature": ["sig1", "sig1", ""],
+        "signature_len": [10, 10, 0],
+        "is_neg": [False, False, True],
+        "Genre": ["M", "M", ""],
+        "status_type": ["success", "success", "success"],
+        "status_description": ["", "", ""],
+    }
+    df = pd.DataFrame(data)
+    service.data_processor.df = df  # Mock the data processor's dataframe
+    _, _, neg_control_is_clean = service.perform_intra_comparison(df)
+    assert neg_control_is_clean is True
+
+
+def test_perform_intra_comparison_contaminated_neg_control(service):
+    """Test intra-patient comparison with a contaminated negative control."""
+    data = {
+        "Sample Name": ["S1", "S1_dup", "neg"],
+        "Patient": ["P1", "P1", "neg"],
+        "signature": ["sig1", "sig1", "contam"],
+        "signature_len": [10, 10, 2],
+        "is_neg": [False, False, True],
+        "Genre": ["M", "M", ""],
+        "status_type": ["success", "success", "success"],
+        "status_description": ["", "", ""],
+    }
+    df = pd.DataFrame(data)
+    service.data_processor.df = df  # Mock the data processor's dataframe
+    _, _, neg_control_is_clean = service.perform_intra_comparison(df)
+    assert neg_control_is_clean is False
 
 
 def test_perform_inter_comparison(service, sample_genemapper_data):

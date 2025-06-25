@@ -46,13 +46,20 @@ class IdentityVigilanceService:
 
     def perform_intra_comparison(
         self, prepared_data: pd.DataFrame
-    ) -> Tuple[pd.DataFrame, int]:
+    ) -> Tuple[pd.DataFrame, int, bool]:
         """Perform intra-patient comparison."""
         df_intra = self._intra_comparison(prepared_data)
+
+        neg_control_clean = False
+        neg_control_rows = df_intra[df_intra["is_neg"]]
+        if not neg_control_rows.empty:
+            if (neg_control_rows["signature_len"] == 0).all():
+                neg_control_clean = True
+
         df_intra = self.data_processor.merge_genotypes(df_intra)
         df_intra = self.format_intra_comparison(df_intra)
         error_count = df_intra["status_type"].value_counts().get("error", 0)
-        return df_intra, error_count
+        return df_intra, error_count, neg_control_clean
 
     def format_intra_comparison(self, df: pd.DataFrame) -> pd.DataFrame:
         """Format the intra-comparison DataFrame for display.
@@ -186,13 +193,9 @@ class IdentityVigilanceService:
         df_intra_formatted = self.format_intra_for_report(df_intra)
         df_inter_formatted = self.format_inter_for_report(df_inter)
 
-        heatmap_path = self.report_generator.save_heatmap_as_image(heatmap)
-        heatmap_path = f"file://{heatmap_path}"
-
         self.report_generator.generate_pdf_report(
             df_intra=df_intra_formatted,
             df_inter=df_inter_formatted,
-            figure_path=heatmap_path,
             metadata=metadata,
             errors_intra=errors_intra,
             errors_inter=errors_inter,

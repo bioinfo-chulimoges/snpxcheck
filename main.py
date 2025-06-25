@@ -24,6 +24,40 @@ from src.visualization.plots import (
 service = IdentityVigilanceService()
 
 
+@st.cache_data
+def process_uploaded_file(uploaded_file):
+    """Process the uploaded file and return the analysis results."""
+    # Load and validate file
+    df, error = service.load_and_validate_file(uploaded_file)
+    if error:
+        st.error(error)
+        return None
+
+    # Prepare data
+    prepared_data = service.prepare_data(df)
+
+    # Perform comparisons
+    (
+        df_intra,
+        errors_intra,
+        neg_control_is_clean,
+    ) = service.perform_intra_comparison(prepared_data)
+    df_inter, errors_inter = service.perform_inter_comparison(prepared_data)
+
+    # Generate heatmap
+    heatmap = service.generate_heatmap(prepared_data)
+
+    # Return results
+    return {
+        "df_intra": df_intra,
+        "df_inter": df_inter,
+        "heatmap": heatmap,
+        "errors_intra": errors_intra,
+        "errors_inter": errors_inter,
+        "neg_control_is_clean": neg_control_is_clean,
+    }
+
+
 def render_intra_comparison(df_intra: pd.DataFrame, error_count: int):
     """Render the intra-patient comparison section.
 
@@ -158,42 +192,23 @@ def main():
         st.divider()
 
     if uploaded_file is not None:
-        # Load and validate file
-        df, error = service.load_and_validate_file(uploaded_file)
-        if error:
-            st.error(error)
-            return
-
-        # Prepare data
-        prepared_data = service.prepare_data(df)
-
-        # Perform comparisons
-        df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
-        df_inter, errors_inter = service.perform_inter_comparison(prepared_data)
-
-        # Generate heatmap
-        heatmap = service.generate_heatmap(prepared_data)
-
-        # Store results in session state
-        st.session_state.comparison_result = {
-            "df_intra": df_intra,
-            "df_inter": df_inter,
-            "heatmap": heatmap,
-            "errors_intra": errors_intra,
-            "errors_inter": errors_inter,
-        }
+        # Process the file and cache the results
+        st.session_state.comparison_result = process_uploaded_file(uploaded_file)
 
         # Display results
         # st.subheader("Résultats de l'analyse")
 
         # Intra-patient comparison
-        render_intra_comparison(df_intra, errors_intra)
+        render_intra_comparison(
+            st.session_state.comparison_result["df_intra"],
+            st.session_state.comparison_result["errors_intra"],
+        )
 
         # Inter-patient comparison
-        render_inter_comparison(df_inter)
+        render_inter_comparison(st.session_state.comparison_result["df_inter"])
 
         # Display heatmap
-        render_heatmap(heatmap)
+        render_heatmap(st.session_state.comparison_result["heatmap"])
 
         # Add the PDF report generation button in the sidebar
         with st.sidebar:
@@ -207,13 +222,21 @@ def main():
                         current_datetime = datetime.now()
                         formatted_date = current_datetime.strftime("%d/%m/%Y %H:%M")
 
+                        if st.session_state.comparison_result["neg_control_is_clean"]:
+                            final_serie = "Absence de contamination, "
+                        else:
+                            final_serie = ""
+
+                        if serie:
+                            final_serie += serie
+
                         metadata = {
                             "date": formatted_date,
                             "filename": uploaded_file.name,
                             "interpreter": interpreter,
                             "week": extraction_week,
                             "comment": comment,
-                            "serie": serie,
+                            "serie": final_serie,
                         }
                         service.generate_pdf_report(
                             df_intra=st.session_state.comparison_result["df_intra"],
