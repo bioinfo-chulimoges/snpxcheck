@@ -168,7 +168,11 @@ def main():
         prepared_data = service.prepare_data(df)
 
         # Perform comparisons
-        df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
+        (
+            df_intra,
+            errors_intra,
+            neg_control_is_clean,
+        ) = service.perform_intra_comparison(prepared_data)
         df_inter, errors_inter = service.perform_inter_comparison(prepared_data)
 
         # Generate heatmap
@@ -181,6 +185,7 @@ def main():
             "heatmap": heatmap,
             "errors_intra": errors_intra,
             "errors_inter": errors_inter,
+            "neg_control_is_clean": neg_control_is_clean,
         }
 
         # Display results
@@ -207,13 +212,21 @@ def main():
                         current_datetime = datetime.now()
                         formatted_date = current_datetime.strftime("%d/%m/%Y %H:%M")
 
+                        if st.session_state.comparison_result["neg_control_is_clean"]:
+                            final_serie = "Absence de contamination, "
+                        else:
+                            final_serie = ""
+
+                        if serie:
+                            final_serie += serie
+
                         metadata = {
                             "date": formatted_date,
                             "filename": uploaded_file.name,
                             "interpreter": interpreter,
                             "week": extraction_week,
                             "comment": comment,
-                            "serie": serie,
+                            "serie": final_serie,
                         }
                         service.generate_pdf_report(
                             df_intra=st.session_state.comparison_result["df_intra"],
