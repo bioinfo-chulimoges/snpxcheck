@@ -71,28 +71,12 @@ def report_generator():
     return ReportGenerator()
 
 
-def test_save_heatmap_as_image(report_generator, sample_data, tmp_path):
-    """Test saving the heatmap as an image."""
-    heatmap_path = report_generator.save_heatmap_as_image(
-        sample_data["heatmap"], str(tmp_path)
-    )
-
-    assert heatmap_path.endswith(".png")
-    assert (
-        str(tmp_path) in heatmap_path
-    )  # Vérifie que le chemin temporaire est dans le chemin retourné
-    assert os.path.exists(heatmap_path)  # Vérifie que le fichier existe
-
-
 def test_generate_html_report(report_generator, sample_data, tmp_path):
     """Test generating the HTML report."""
-    # Save heatmap first
-    heatmap_path = report_generator.save_heatmap_as_image(sample_data["heatmap"])
 
     html_content = report_generator.generate_html_report(
         df_intra=sample_data["df_intra"],
         df_inter=sample_data["df_inter"],
-        fig_path=heatmap_path,
         metadata=sample_data["metadata"],
         errors_intra=sample_data["errors_intra"],
         errors_inter=sample_data["errors_inter"],
@@ -112,11 +96,9 @@ def test_generate_html_report(report_generator, sample_data, tmp_path):
 def test_save_pdf_from_html(report_generator, sample_data, tmp_path):
     """Test converting HTML to PDF."""
     # Generate HTML content first
-    heatmap_path = report_generator.save_heatmap_as_image(sample_data["heatmap"])
     html_content = report_generator.generate_html_report(
         df_intra=sample_data["df_intra"],
         df_inter=sample_data["df_inter"],
-        fig_path=heatmap_path,
         metadata=sample_data["metadata"],
         errors_intra=sample_data["errors_intra"],
         errors_inter=sample_data["errors_inter"],
@@ -141,7 +123,6 @@ def test_generate_pdf_report(report_generator, sample_data, tmp_path):
     report_generator.generate_pdf_report(
         df_intra=sample_data["df_intra"],
         df_inter=sample_data["df_inter"],
-        figure_path="",  # Will be generated internally
         metadata=sample_data["metadata"],
         errors_intra=sample_data["errors_intra"],
         errors_inter=sample_data["errors_inter"],
