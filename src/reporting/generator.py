@@ -7,7 +7,7 @@ including heatmap visualization and comparison data.
 import os
 import tempfile
 from typing import Optional
-
+import html
 import pandas as pd
 import plotly
 from jinja2 import Environment, FileSystemLoader
@@ -66,7 +66,7 @@ class ReportGenerator:
             interpreter=metadata.get("interpreter", ""),
             week=metadata.get("week", ""),
             serie=metadata.get("serie", ""),
-            comment=metadata.get("comment", ""),
+            comment=html.escape(metadata.get("comment", "")).replace('\n', '<br>'),
             df_intra=df_intra.to_html(classes="table"),
             df_inter=df_inter.to_html(classes="table", index=False),
             errors_intra=errors_intra,
