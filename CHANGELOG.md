@@ -9,6 +9,7 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 
 ## Fixed
 - Prend en compte les reours à la ligne dans les commentaire du rapport #10
+- Corrige les rules des jobs dans le pipeline CI/CD #6 #5
 
 ## Removed
 - La heatmap n'apparait plus dans le rapport pdf #9
