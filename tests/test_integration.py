@@ -88,7 +88,9 @@ def test_full_processing_flow(service, sample_genemapper_file, tmp_path):
     assert "is_neg" in prepared_data.columns
 
     # 3. Perform intra-comparison
-    df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
+    df_intra, errors_intra, neg_control_is_clean = service.perform_intra_comparison(
+        prepared_data
+    )
     assert isinstance(df_intra, pd.DataFrame)
     assert isinstance(errors_intra, (int, np.int64))
     assert "status_type" in df_intra.columns
@@ -239,7 +241,9 @@ def test_flow_with_duplicate_samples(service, tmp_path):
     prepared_data = service.prepare_data(df)
 
     # 3. Perform intra-comparison
-    df_intra, errors_intra = service.perform_intra_comparison(prepared_data)
+    df_intra, errors_intra, neg_control_is_clean = service.perform_intra_comparison(
+        prepared_data
+    )
     assert errors_intra > 0  # Should detect different signatures for same patient
 
     # 4. Perform inter-comparison
