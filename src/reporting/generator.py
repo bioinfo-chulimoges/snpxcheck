@@ -37,35 +37,10 @@ class ReportGenerator:
         self.env = Environment(loader=FileSystemLoader(template_dir))
         self.template_dir = template_dir
 
-    def save_heatmap_as_image(
-        self,
-        fig: plotly.graph_objects.Figure,
-        output_dir: Optional[str] = None,
-    ) -> str:
-        """Save a Plotly figure to a PNG image.
-
-        Args:
-            fig (plotly.graph_objects.Figure): Plotly figure to save.
-            output_dir (str, optional): Directory to save the image.
-                If None, uses a temporary file. Defaults to None.
-
-        Returns:
-            str: Path to the saved image file.
-        """
-        if output_dir is None:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-                fig.write_image(tmpfile.name, width=1200, height=1200)
-                return tmpfile.name
-        else:
-            output_path = os.path.join(output_dir, "heatmap.png")
-            fig.write_image(output_path, width=1200, height=1200)
-            return output_path
-
     def generate_html_report(  # noqa: PLR0913
         self,
         df_intra: pd.DataFrame,
         df_inter: pd.DataFrame,
-        fig_path: str,
         metadata: dict,
         errors_intra: int,
         errors_inter: int,
@@ -94,7 +69,6 @@ class ReportGenerator:
             comment=metadata.get("comment", ""),
             df_intra=df_intra.to_html(classes="table"),
             df_inter=df_inter.to_html(classes="table", index=False),
-            heatmap_path=fig_path,
             errors_intra=errors_intra,
             errors_inter=errors_inter,
             version=VERSION,
@@ -114,7 +88,6 @@ class ReportGenerator:
         self,
         df_intra: pd.DataFrame,
         df_inter: pd.DataFrame,
-        figure_path: str,
         metadata: dict,
         errors_intra: int,
         errors_inter: int,
@@ -125,7 +98,6 @@ class ReportGenerator:
         Args:
             df_intra (pd.DataFrame): DataFrame containing intra-patient comparison.
             df_inter (pd.DataFrame): DataFrame containing inter-patient comparison.
-            figure_path (str): Path to the heatmap image.
             metadata (dict): Dictionary containing report metadata.
             errors_intra (int): Number of intra-patient errors.
             errors_inter (int): Number of inter-patient errors.
@@ -134,7 +106,6 @@ class ReportGenerator:
         html = self.generate_html_report(
             df_intra,
             df_inter,
-            figure_path,
             metadata,
             errors_intra,
             errors_inter,

@@ -186,13 +186,9 @@ class IdentityVigilanceService:
         df_intra_formatted = self.format_intra_for_report(df_intra)
         df_inter_formatted = self.format_inter_for_report(df_inter)
 
-        heatmap_path = self.report_generator.save_heatmap_as_image(heatmap)
-        heatmap_path = f"file://{heatmap_path}"
-
         self.report_generator.generate_pdf_report(
             df_intra=df_intra_formatted,
             df_inter=df_inter_formatted,
-            figure_path=heatmap_path,
             metadata=metadata,
             errors_intra=errors_intra,
             errors_inter=errors_inter,
