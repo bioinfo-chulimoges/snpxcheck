@@ -2,7 +2,14 @@
 
 Tous les changements notables de ce projet seront documentés dans ce fichier.
 
+## [1.1.1] - 2026-03-03
+
+## Fixed
+
+- Mise à jour de la dépendance libgdk-pixbuf2.0-0 suite à la mise à jour de streamlit #12
+
 ## [1.1.0] - 2024-05-02
+
 ## Added
 - Si le contrôle négatif ne contient aucun allèle, la phrase "Absence de contamination," est ajoutée en préfix du champ "Série conforme" du rapport pdf #8
 
