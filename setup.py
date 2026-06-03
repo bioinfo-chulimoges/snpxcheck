@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="snpxplex_streamlit",
-    version="1.0.0",
+    version="1.2.0",
     author="Paco",
     author_email="paco@example.com",
     description="Application Streamlit pour l'analyse génétique SNPXPlex",
