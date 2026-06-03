@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 import pandas as pd
 
 from src.data.genetics import GeneticAnalyzer
-from src.data.processing import DataProcessor
+from src.data.processing import DataProcessor, compute_identity_matrix
 from src.reporting.generator import ReportGenerator
 from src.visualization.plots import (
     create_plotly_heatmap,
@@ -263,34 +263,4 @@ class IdentityVigilanceService:
             *self.genetic_analyzer._get_allele_columns(),
             "Genre",
         ]
-        patient_ids = df["Sample Name"].unique()
-        comparison_matrix = pd.DataFrame(index=patient_ids, columns=patient_ids)
-
-        for patient_1 in patient_ids:
-            for patient_2 in patient_ids:
-                sample_1 = df[df["Sample Name"] == patient_1][
-                    allele_columns
-                ].values.flatten()
-                sample_2 = df[df["Sample Name"] == patient_2][
-                    allele_columns
-                ].values.flatten()
-
-                common_alleles = 0
-                total_alleles = 0
-
-                for a1, a2 in zip(sample_1, sample_2):
-                    total_alleles += 1
-                    if pd.isna(a1) and pd.isna(a2):
-                        common_alleles += 1
-                    elif pd.isna(a1) or pd.isna(a2):
-                        continue
-                    elif a1 == a2:
-                        common_alleles += 1
-
-                if total_alleles > 0:
-                    identity_percentage = (common_alleles / total_alleles) * 100
-                else:
-                    identity_percentage = pd.NA
-                comparison_matrix.loc[patient_1, patient_2] = identity_percentage
-
-        return comparison_matrix
+        return compute_identity_matrix(df, allele_columns)
