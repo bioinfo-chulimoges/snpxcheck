@@ -11,8 +11,17 @@ ALLELE_PREFIX = "Allele"
 GENDER_ALLELES_X = "Allele 29"
 GENDER_ALLELES_Y = "Allele 30"
 
-# Keywords indicating a negative control
+# Keywords indicating a negative control (substring match, case-insensitive)
 NEGATIVE_KEYWORDS = ["neg", "tem"]
+
+# Suffixes indicating a negative control (suffix match, case-insensitive)
+NEGATIVE_SUFFIXES = ["NE"]
+
+# Sample name nomenclatures
+# GLIMS Genetics: {glims_id:9}{tube_id:2}-{sample_id}
+GLIMS_SAMPLE_PATTERN = r"^(?P<glims_id>\d{9})(?P<tube_id>\d{2})-(?P<sample_id>.+)$"
+# Legacy: {sample_id}{tube_suffix:bis|ter?}
+LEGACY_TUBE_SUFFIX_PATTERN = r"^(.*?)(bis|ter)$"
 
 # List of required columns in the input file
 REQUIRED_COLUMNS = ["Sample File", "Sample Name", "Panel", "Marker", "Dye"] + [
