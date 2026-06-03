@@ -54,9 +54,12 @@ la casse), ex. `26011715104-26C073aNE` ; ou nom contenant `neg`/`tem`.
 - **Colonne `Patient` pour GLIMS** = `glims_id` (9 chiffres). Sert à la fois de
   clé de regroupement et de label patient. Le nom complet reste affiché dans la
   colonne `Sample Name`.
-- **Détection de contrôle négatif** = le nom (ou le `sample_id` pour GLIMS) se
-  termine par un suffixe de `NEGATIVE_SUFFIXES` (`NE`), **OU** contient un
-  mot-clé de `NEGATIVE_KEYWORDS` (`neg`, `tem`). Toujours insensible à la casse.
+- **Détection de contrôle négatif** (insensible à la casse) :
+  - **GLIMS** : le `sample_id` se termine par un suffixe de `NEGATIVE_SUFFIXES`
+    (`NE`) **OU** contient un mot-clé de `NEGATIVE_KEYWORDS` (`neg`, `tem`).
+  - **Legacy** : le nom contient un mot-clé de `NEGATIVE_KEYWORDS` (`neg`,
+    `tem`). Le suffixe `NE` n'est **pas** appliqué au legacy (il est spécifique
+    à GLIMS), pour ne pas marquer à tort un nom legacy finissant par « ne ».
 - La contrainte « ne pas matcher les deux nomenclatures » est satisfaite **par
   construction** : un `glims_id` (`260118229`) ne peut pas être égal à un
   `sample_id` legacy (`26B279a`).
@@ -98,9 +101,13 @@ Logique de `parse_sample_name` :
 - **sinon (legacy)** → `patient_id =` nom débarrassé du suffixe `bis`/`ter`
   (via `LEGACY_TUBE_SUFFIX_PATTERN`) ; `is_negative` calculé sur le nom complet
 
-Helper interne `_is_negative(text)` :
-`text` (en minuscules) se termine par un `NEGATIVE_SUFFIXES` **OU** contient un
-`NEGATIVE_KEYWORDS`.
+Helper interne `_is_negative(text, *, check_suffix)` :
+`text` (en minuscules) contient un `NEGATIVE_KEYWORDS` **OU**, lorsque
+`check_suffix` est vrai, se termine par un `NEGATIVE_SUFFIXES`. Le suffixe `NE`
+est **spécifique à GLIMS** : il n'est testé que sur le `sample_id` GLIMS
+(`check_suffix=True`) ; la branche legacy n'utilise que `NEGATIVE_KEYWORDS`
+(`check_suffix=False`), ce qui évite de marquer à tort un nom legacy finissant
+par « ne ».
 
 Interface : *entrée* = valeur brute de `Sample Name` (str, ou NaN/None toléré) ;
 *sortie* = `ParsedSampleName`. *Dépend de* : les constantes de `config`.
