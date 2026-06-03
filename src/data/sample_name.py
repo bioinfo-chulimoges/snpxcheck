@@ -1,13 +1,13 @@
-"""Parsing des noms d'échantillons (Sample Name) du fichier Genemapper.
+"""Sample name parsing for the SNPXPlex Streamlit application.
 
-Deux nomenclatures coexistent :
+Two nomenclatures coexist in the ``Sample Name`` column of the Genemapper file:
 
-- Legacy : ``{sample_id}{suffixe_tube:[bis,ter]?}`` (ex. ``24T781abis``)
-- GLIMS Genetics : ``{glims_id:9}{tube_id:2}-{sample_id}``
-  (ex. ``26011822905-26B279a``)
+- Legacy: ``{sample_id}{tube_suffix:[bis,ter]?}`` (e.g. ``24T781abis``)
+- GLIMS Genetics: ``{glims_id:9}{tube_id:2}-{sample_id}``
+  (e.g. ``26011822905-26B279a``)
 
-Le module expose :func:`parse_sample_name`, qui renvoie l'identifiant de
-regroupement patient et le statut de contrôle négatif.
+This module exposes :func:`parse_sample_name`, which returns the patient
+grouping identifier and the negative-control status.
 """
 
 import re
@@ -26,13 +26,13 @@ _LEGACY_RE = re.compile(LEGACY_TUBE_SUFFIX_PATTERN)
 
 @dataclass(frozen=True)
 class ParsedSampleName:
-    """Résultat du parsing d'un nom d'échantillon.
+    """Result of parsing a sample name.
 
     Attributes:
-        patient_id (str): Identifiant de regroupement des tubes d'un même
-            patient. ``glims_id`` pour la nomenclature GLIMS, ``sample_id``
-            débarrassé du suffixe ``bis``/``ter`` pour la nomenclature legacy.
-        is_negative (bool): True si l'échantillon est un contrôle négatif.
+        patient_id (str): Identifier used to group tubes of the same patient.
+            The ``glims_id`` for the GLIMS nomenclature, the ``sample_id``
+            stripped of its ``bis``/``ter`` suffix for the legacy nomenclature.
+        is_negative (bool): True if the sample is a negative control.
     """
 
     patient_id: str
@@ -40,14 +40,14 @@ class ParsedSampleName:
 
 
 def _is_negative(text: str) -> bool:
-    """Détermine si un identifiant correspond à un contrôle négatif.
+    """Check whether an identifier denotes a negative control.
 
     Args:
-        text (str): Identifiant à tester (nom complet ou sample_id).
+        text (str): Identifier to test (full name or sample_id).
 
     Returns:
-        bool: True si ``text`` (insensible à la casse) se termine par un suffixe
-            de ``NEGATIVE_SUFFIXES`` ou contient un mot-clé de
+        bool: True if ``text`` (case-insensitive) ends with a suffix from
+            ``NEGATIVE_SUFFIXES`` or contains a keyword from
             ``NEGATIVE_KEYWORDS``.
     """
     name = text.lower()
@@ -56,15 +56,15 @@ def _is_negative(text: str) -> bool:
     return any(keyword.lower() in name for keyword in NEGATIVE_KEYWORDS)
 
 
-def parse_sample_name(sample_name) -> ParsedSampleName:
-    """Parse un nom d'échantillon en identifiant patient + statut négatif.
+def parse_sample_name(sample_name: str | float | None) -> ParsedSampleName:
+    """Parse a sample name into a patient identifier and negative status.
 
     Args:
-        sample_name: Valeur brute de la colonne ``Sample Name`` (str ; les
-            valeurs None/NaN sont tolérées).
+        sample_name (str | float | None): Raw value from the ``Sample Name``
+            column. None and NaN values are tolerated.
 
     Returns:
-        ParsedSampleName: patient_id et is_negative.
+        ParsedSampleName: The patient_id and is_negative flag.
     """
     name = "" if sample_name is None else str(sample_name).strip()
     if not name or name.lower() == "nan":
