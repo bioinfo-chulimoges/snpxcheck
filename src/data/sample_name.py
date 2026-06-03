@@ -39,19 +39,23 @@ class ParsedSampleName:
     is_negative: bool
 
 
-def _is_negative(text: str) -> bool:
+def _is_negative(text: str, *, check_suffix: bool) -> bool:
     """Check whether an identifier denotes a negative control.
 
     Args:
         text (str): Identifier to test (full name or sample_id).
+        check_suffix (bool): Whether to also treat a ``NEGATIVE_SUFFIXES``
+            suffix as negative. The ``NE`` suffix is specific to the GLIMS
+            nomenclature, so it is only checked on the GLIMS sample_id; the
+            legacy path relies on ``NEGATIVE_KEYWORDS`` alone.
 
     Returns:
-        bool: True if ``text`` (case-insensitive) ends with a suffix from
-            ``NEGATIVE_SUFFIXES`` or contains a keyword from
-            ``NEGATIVE_KEYWORDS``.
+        bool: True if ``text`` (case-insensitive) contains a keyword from
+            ``NEGATIVE_KEYWORDS``, or — when ``check_suffix`` is True — ends
+            with a suffix from ``NEGATIVE_SUFFIXES``.
     """
     name = text.lower()
-    if any(name.endswith(suffix.lower()) for suffix in NEGATIVE_SUFFIXES):
+    if check_suffix and any(name.endswith(s.lower()) for s in NEGATIVE_SUFFIXES):
         return True
     return any(keyword.lower() in name for keyword in NEGATIVE_KEYWORDS)
 
@@ -72,10 +76,14 @@ def parse_sample_name(sample_name: str | float | None) -> ParsedSampleName:
 
     glims_match = _GLIMS_RE.match(name)
     if glims_match:
+        sample_id = glims_match.group("sample_id")
         return ParsedSampleName(
             patient_id=glims_match.group("glims_id"),
-            is_negative=_is_negative(glims_match.group("sample_id")),
+            is_negative=_is_negative(sample_id, check_suffix=True),
         )
 
     patient_id = _LEGACY_RE.sub(r"\1", name)
-    return ParsedSampleName(patient_id=patient_id, is_negative=_is_negative(name))
+    return ParsedSampleName(
+        patient_id=patient_id,
+        is_negative=_is_negative(name, check_suffix=False),
+    )

@@ -9,6 +9,7 @@ from src.utils.config import (
     GENDER_ALLELES_X,
     GENDER_ALLELES_Y,
     NEGATIVE_KEYWORDS,
+    NEGATIVE_SUFFIXES,
     REQUIRED_COLUMNS,
 )
 from src.utils.models import SessionState
@@ -24,6 +25,7 @@ __all__ = [
     "GENDER_ALLELES_X",
     "GENDER_ALLELES_Y",
     "NEGATIVE_KEYWORDS",
+    "NEGATIVE_SUFFIXES",
     "REQUIRED_COLUMNS",
     "ComparisonEngine",
     "DataProcessor",
