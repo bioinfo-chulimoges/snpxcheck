@@ -210,4 +210,6 @@ def test_prepare_data_does_not_mix_nomenclatures():
     """GLIMS and legacy lookalikes are not grouped together."""
     df = _glims_df(["26011822905-26B279a", "26B279abis"])
     prepared = GeneticAnalyzer(df).prepare_data()
+    assert prepared.loc[0, "Patient"] == "260118229"
+    assert prepared.loc[1, "Patient"] == "26B279a"
     assert prepared.loc[0, "Patient"] != prepared.loc[1, "Patient"]
