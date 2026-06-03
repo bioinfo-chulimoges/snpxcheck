@@ -45,8 +45,8 @@ def test_cross_nomenclature_not_same_patient():
 
 
 def test_legacy_ne_suffix_is_not_negative():
-    """Le suffixe NE est spécifique à GLIMS : un nom legacy finissant par 'ne'
-    n'est pas un contrôle négatif."""
+    """Le suffixe NE est spécifique à GLIMS : un nom legacy finissant par 'ne' n'est pas
+    un contrôle négatif."""
     parsed = parse_sample_name("24T768ane")
     assert parsed.patient_id == "24T768ane"
     assert parsed.is_negative is False
