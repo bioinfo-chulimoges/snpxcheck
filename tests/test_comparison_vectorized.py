@@ -1,11 +1,10 @@
 # ruff: noqa: PLR2004
 """Equivalence tests for the vectorized comparison code.
 
-These tests pin the *exact* behavior of the original (slow) algorithms by
-embedding faithful reference implementations and asserting that the new
-vectorized production functions produce identical output, both on the real
-benchmark dataset and on hand-crafted edge cases (NaN, empty strings,
-duplicates, single sample).
+These tests pin the *exact* behavior of the original (slow) algorithms by embedding
+faithful reference implementations and asserting that the new vectorized production
+functions produce identical output, both on the real benchmark dataset and on hand-
+crafted edge cases (NaN, empty strings, duplicates, single sample).
 """
 
 from hashlib import sha1
