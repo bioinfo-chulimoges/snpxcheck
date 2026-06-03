@@ -7,6 +7,7 @@ computation, and control sample identification.
 from hashlib import sha1
 from typing import Tuple
 
+import numpy as np
 import pandas as pd
 
 from src.data.sample_name import parse_sample_name
@@ -103,6 +104,53 @@ class GeneticAnalyzer:
         """
         return parse_sample_name(sample_name).is_negative
 
+    def _compute_signatures(self, df: pd.DataFrame) -> pd.Series:
+        """Compute the per-row allele signatures without a row-wise apply.
+
+        Vectorizes the string cleaning per allele column, then assembles the
+        variable-length tuples over a numpy row view. Produces output identical
+        to applying :meth:`compute_signature` row by row.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing the allele columns.
+
+        Returns:
+            pd.Series: Series of signature tuples, indexed like ``df``.
+        """
+        if self.allele_cols:
+            stripped = np.column_stack(
+                [df[col].astype(str).str.strip().to_numpy() for col in self.allele_cols]
+            )
+        else:
+            stripped = np.empty((len(df), 0), dtype=object)
+
+        signatures = [
+            tuple(a for a in row if a and a.lower() != "nan") for row in stripped
+        ]
+        return pd.Series(signatures, index=df.index, dtype=object)
+
+    def _determine_sex_vectorized(self, df: pd.DataFrame) -> np.ndarray:
+        """Determine sex for every row without a row-wise apply.
+
+        Vectorized equivalent of :meth:`determine_sex`.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing the gender allele columns.
+
+        Returns:
+            np.ndarray: Array of "femme" / "homme" / "indéterminé" values.
+        """
+        x = df[GENDER_ALLELES_X]
+        y = df[GENDER_ALLELES_Y]
+        x_is_female_marker = x.notna() & (x == "X")
+        y_absent = y.isna() | (y == "")
+        y_is_male_marker = y.notna() & (y == "Y")
+        return np.where(
+            x_is_female_marker & y_absent,
+            "femme",
+            np.where(x_is_female_marker & y_is_male_marker, "homme", "indéterminé"),
+        )
+
     def prepare_data(self) -> pd.DataFrame:
         """Prepare the data for genetic analysis.
 
@@ -113,13 +161,16 @@ class GeneticAnalyzer:
         """
         df = self.df.copy()
 
-        # Compute signatures and hashes
-        df["signature"] = df.apply(self.compute_signature, axis=1)
-        df["signature_hash"] = df.apply(self.compute_signature_hash, axis=1)
+        # Compute signatures and hashes (vectorized; equivalent to the per-row
+        # compute_signature / compute_signature_hash / determine_sex methods).
+        df["signature"] = self._compute_signatures(df)
+        df["signature_hash"] = df["signature"].map(
+            lambda sig: sha1(str(sig).encode("utf-8")).hexdigest()
+        )
         df["signature_len"] = df["signature"].apply(len)
 
         # Add metadata
-        df["Genre"] = df.apply(self.determine_sex, axis=1)
+        df["Genre"] = self._determine_sex_vectorized(df)
         parsed = df["Sample Name"].apply(parse_sample_name)
         df["Patient"] = parsed.apply(lambda p: p.patient_id)
         df["is_neg"] = parsed.apply(lambda p: p.is_negative)
