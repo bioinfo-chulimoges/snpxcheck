@@ -174,3 +174,42 @@ def test_prepare_data(analyzer, sample_data):
     # Check that negative controls are identified
     assert prepared_df.loc[4, "is_neg"]
     assert all(not neg for neg in prepared_df.loc[:3, "is_neg"])
+
+
+def _glims_df(sample_names):
+    """Build a minimal DataFrame with empty allele columns."""
+    data = {"Sample Name": list(sample_names)}
+    for i in range(1, 35):
+        data[f"Allele {i}"] = ["" for _ in sample_names]
+    return pd.DataFrame(data)
+
+
+def test_prepare_data_glims_groups_by_glims_id():
+    """Two GLIMS tubes of the same patient share the Patient (glims_id)."""
+    df = _glims_df(
+        [
+            "26011822905-26B279a",
+            "26011822906-26B279a",
+            "26011825506-26B280a",
+        ]
+    )
+    prepared = GeneticAnalyzer(df).prepare_data()
+    patients = prepared["Patient"].tolist()
+    assert patients[0] == patients[1] == "260118229"
+    assert patients[2] == "260118255"
+
+
+def test_prepare_data_glims_negative_control():
+    """The NE suffix marks a negative control in the GLIMS format."""
+    df = _glims_df(["26011715104-26C073aNE"])
+    prepared = GeneticAnalyzer(df).prepare_data()
+    assert bool(prepared.loc[0, "is_neg"]) is True
+
+
+def test_prepare_data_does_not_mix_nomenclatures():
+    """GLIMS and legacy lookalikes are not grouped together."""
+    df = _glims_df(["26011822905-26B279a", "26B279abis"])
+    prepared = GeneticAnalyzer(df).prepare_data()
+    assert prepared.loc[0, "Patient"] == "260118229"
+    assert prepared.loc[1, "Patient"] == "26B279a"
+    assert prepared.loc[0, "Patient"] != prepared.loc[1, "Patient"]

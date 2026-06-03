@@ -9,11 +9,11 @@ from typing import Tuple
 
 import pandas as pd
 
+from src.data.sample_name import parse_sample_name
 from src.utils.config import (
     ALLELE_PREFIX,
     GENDER_ALLELES_X,
     GENDER_ALLELES_Y,
-    NEGATIVE_KEYWORDS,
 )
 
 
@@ -101,10 +101,7 @@ class GeneticAnalyzer:
         Returns:
             bool: True if the sample is a negative control, False otherwise.
         """
-        if not sample_name:
-            return False
-        name = sample_name.lower()
-        return any(k in name for k in NEGATIVE_KEYWORDS)
+        return parse_sample_name(sample_name).is_negative
 
     def prepare_data(self) -> pd.DataFrame:
         """Prepare the data for genetic analysis.
@@ -123,10 +120,9 @@ class GeneticAnalyzer:
 
         # Add metadata
         df["Genre"] = df.apply(self.determine_sex, axis=1)
-        df["Patient"] = df["Sample Name"].str.replace(
-            r"^(.*?)(bis|ter)$", r"\1", regex=True
-        )
-        df["is_neg"] = df["Sample Name"].apply(self.is_negative_control)
+        parsed = df["Sample Name"].apply(parse_sample_name)
+        df["Patient"] = parsed.apply(lambda p: p.patient_id)
+        df["is_neg"] = parsed.apply(lambda p: p.is_negative)
 
         # Initialize status fields
         df["status_type"] = "success"
