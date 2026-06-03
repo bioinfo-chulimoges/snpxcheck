@@ -2,6 +2,16 @@
 
 Tous les changements notables de ce projet seront documentés dans ce fichier.
 
+## [1.2.0] - 2026-06-03
+
+## Added
+
+- Prise en compte des nouveau identifiants patient basés sur l'id glims
+
+## Fixed
+
+- Amélioration du temps de calcul pour réaliser les comparaisons de génotypes
+
 ## [1.1.1] - 2026-03-03
 
 ## Fixed
