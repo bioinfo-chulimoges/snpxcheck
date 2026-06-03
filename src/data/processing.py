@@ -6,9 +6,118 @@ validation, data loading, and genotype merging.
 
 from typing import List
 
+import numpy as np
 import pandas as pd
 
 from src.utils.config import COLUMNS_TO_DROP, REQUIRED_COLUMNS
+
+
+def merge_allele_pairs(df: pd.DataFrame) -> pd.DataFrame:
+    """Group allele columns 2 by 2 into a single genotype per locus (vectorized).
+
+    Equivalent to applying, for each ``(a1, a2)`` pair, the per-cell rule::
+
+        clean(v) = str(v).strip().split("_")[-1].replace("nan", "")
+        ""              if both cleaned values are empty
+        the non-empty   if exactly one is empty
+        the shared one  if both are equal
+        "v1/v2"         otherwise
+
+    but computed with pandas/numpy vector operations instead of a row-wise
+    ``DataFrame.apply(axis=1)``.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing allele columns.
+
+    Returns:
+        pd.DataFrame: DataFrame with merged genotypes for each locus.
+    """
+    keeping_cols = [col for col in df.columns if not col.startswith("Allele")]
+    merged_data = df[keeping_cols].copy()
+
+    allele_cols = [col for col in df.columns if col.startswith("Allele")]
+    pairs = [
+        (allele_cols[i], allele_cols[i + 1])
+        for i in range(0, len(allele_cols) - 1, 2)
+    ]
+    if not pairs:
+        return merged_data
+
+    # Clean every allele column at once with C-level numpy string ops:
+    # str(v).strip().split("_")[-1].replace("nan", "")
+    block = df[allele_cols].to_numpy().astype(str)
+    block = np.char.strip(block)
+    block = np.char.rpartition(block, "_")[..., 2]  # part after the last "_"
+    block = np.char.replace(block, "nan", "")
+    cleaned = {col: block[:, i] for i, col in enumerate(allele_cols)}
+
+    for idx, (a1, a2) in enumerate(pairs, start=1):
+        v1 = cleaned[a1]
+        v2 = cleaned[a2]
+        combined = np.char.add(np.char.add(v1, "/"), v2)
+        merged_data[f"Locus {idx}"] = np.where(
+            (v1 == "") & (v2 == ""),
+            "",
+            np.where(
+                v2 == "",
+                v1,
+                np.where(v1 == "", v2, np.where(v1 == v2, v1, combined)),
+            ),
+        )
+
+    return merged_data
+
+
+def compute_identity_matrix(
+    df: pd.DataFrame, allele_columns: List[str]
+) -> pd.DataFrame:
+    """Compute the pairwise sample identity matrix (% shared alleles), vectorized.
+
+    For every pair of samples the identity is the fraction of ``allele_columns``
+    that are considered "common", where a column counts as common when both
+    values are missing, or both are present and equal. Missing-vs-present never
+    counts. The result is identical to the original O(n^3) double loop but is
+    computed with numpy in O(n^2 * k).
+
+    Args:
+        df (pd.DataFrame): Prepared data with a ``Sample Name`` column.
+        allele_columns (List[str]): Columns compared between samples.
+
+    Returns:
+        pd.DataFrame: Square matrix indexed by sample name with identity
+            percentages (0-100).
+    """
+    sample_ids = df["Sample Name"].unique()
+    total = len(allele_columns)
+
+    if len(sample_ids) == 0 or total == 0:
+        return pd.DataFrame(index=sample_ids, columns=sample_ids, dtype=float)
+
+    # One row per sample, aligned to first-appearance order.
+    samples = (
+        df.drop_duplicates(subset="Sample Name")
+        .set_index("Sample Name")
+        .loc[sample_ids, allele_columns]
+    )
+    n = len(sample_ids)
+
+    na = samples.isna().to_numpy()
+    # Integer codes so equality can be compared as integers; NaN -> -1.
+    codes, _ = pd.factorize(samples.to_numpy().ravel())
+    codes = codes.reshape(samples.shape)
+
+    common = np.zeros((n, n), dtype=np.int64)
+    for c in range(total):
+        col_codes = codes[:, c]
+        present = ~na[:, c]
+        both_na = na[:, c][:, None] & na[:, c][None, :]
+        both_present = present[:, None] & present[None, :]
+        equal = col_codes[:, None] == col_codes[None, :]
+        common += both_na
+        common += both_present & equal
+
+    identity = common.astype(float) / total * 100.0
+    return pd.DataFrame(identity, index=sample_ids, columns=sample_ids)
 
 
 class DataProcessor:
@@ -80,30 +189,4 @@ class DataProcessor:
         Returns:
             pd.DataFrame: DataFrame with merged genotypes for each locus.
         """
-        keeping_cols = [col for col in df.columns if not col.startswith("Allele")]
-        merged_data = df[keeping_cols].copy()
-
-        allele_cols = [col for col in df.columns if col.startswith("Allele")]
-        pairs = [
-            (allele_cols[i], allele_cols[i + 1])
-            for i in range(0, len(allele_cols) - 1, 2)
-        ]
-
-        for idx, (a1, a2) in enumerate(pairs, start=1):
-
-            def combine(row, a1, a2):
-                val1 = str(row[a1]).strip().split("_")[-1].replace("nan", "")
-                val2 = str(row[a2]).strip().split("_")[-1].replace("nan", "")
-                if not val1 and not val2:
-                    return ""
-                if val1 and not val2:
-                    return val1
-                if not val1 and val2:
-                    return val2
-                if val1 == val2:
-                    return val1
-                return f"{val1}/{val2}"
-
-            merged_data[f"Locus {idx}"] = df.apply(combine, args=(a1, a2), axis=1)
-
-        return merged_data
+        return merge_allele_pairs(df)

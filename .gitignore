@@ -42,3 +42,12 @@ docs/source/_static/versions.json
 .idea/
 *.swp
 *.swo
+
+CLAUDE.md
+.claude
+docs/
+.impeccable.md
+.code-review-graph/
+.mcp.json
+.agents
+skills-lock.json

@@ -9,7 +9,11 @@ from typing import List, Optional, Tuple
 import pandas as pd
 
 from src.data.genetics import GeneticAnalyzer
-from src.data.processing import DataProcessor
+from src.data.processing import (
+    DataProcessor,
+    compute_identity_matrix,
+    merge_allele_pairs,
+)
 from src.visualization.plots import create_plotly_heatmap
 
 
@@ -152,33 +156,7 @@ class ComparisonEngine:
 
     def _merge_genotypes(self, df: pd.DataFrame) -> pd.DataFrame:
         """Group the columns of alleles 2 by 2 into a single genotype per locus."""
-        keeping_cols = [col for col in df.columns if not col.startswith("Allele")]
-        merged_data = df[keeping_cols].copy()
-
-        allele_cols = [col for col in df.columns if col.startswith("Allele")]
-        pairs = [
-            (allele_cols[i], allele_cols[i + 1])
-            for i in range(0, len(allele_cols) - 1, 2)
-        ]
-
-        for idx, (a1, a2) in enumerate(pairs, start=1):
-
-            def combine(row, a1, a2):
-                val1 = str(row[a1]).strip().split("_")[-1].replace("nan", "")
-                val2 = str(row[a2]).strip().split("_")[-1].replace("nan", "")
-                if not val1 and not val2:
-                    return ""
-                if val1 and not val2:
-                    return val1
-                if not val1 and val2:
-                    return val2
-                if val1 == val2:
-                    return val1
-                return f"{val1}/{val2}"
-
-            merged_data[f"Locus {idx}"] = df.apply(combine, args=(a1, a2), axis=1)
-
-        return merged_data
+        return merge_allele_pairs(df)
 
     def _sample_heatmap(self, df: pd.DataFrame) -> pd.DataFrame:
         """Internal method for generating the heatmap data."""
@@ -187,34 +165,4 @@ class ComparisonEngine:
             for col in df.columns
             if col.startswith("Allele") and col not in {"Allele 29", "Allele 30"}
         ] + ["Genre"]
-        patient_ids = df["Sample Name"].unique()
-        comparison_matrix = pd.DataFrame(index=patient_ids, columns=patient_ids)
-
-        for patient_1 in patient_ids:
-            for patient_2 in patient_ids:
-                sample_1 = df[df["Sample Name"] == patient_1][
-                    allele_columns
-                ].values.flatten()
-                sample_2 = df[df["Sample Name"] == patient_2][
-                    allele_columns
-                ].values.flatten()
-
-                common_alleles = 0
-                total_alleles = 0
-
-                for a1, a2 in zip(sample_1, sample_2):
-                    total_alleles += 1
-                    if pd.isna(a1) and pd.isna(a2):
-                        common_alleles += 1
-                    elif pd.isna(a1) or pd.isna(a2):
-                        continue
-                    elif a1 == a2:
-                        common_alleles += 1
-
-                if total_alleles > 0:
-                    identity_percentage = (common_alleles / total_alleles) * 100
-                else:
-                    identity_percentage = pd.NA
-                comparison_matrix.loc[patient_1, patient_2] = identity_percentage
-
-        return comparison_matrix
+        return compute_identity_matrix(df, allele_columns)
