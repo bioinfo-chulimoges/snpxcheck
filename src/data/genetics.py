@@ -118,14 +118,16 @@ class GeneticAnalyzer:
             pd.Series: Series of signature tuples, indexed like ``df``.
         """
         if self.allele_cols:
-            stripped = np.column_stack(
-                [df[col].astype(str).str.strip().to_numpy() for col in self.allele_cols]
-            )
+            # str(x).strip() applied per element, matching the original
+            # compute_signature. numpy's astype(str) calls str() on every value
+            # (so NaN -> "nan"), which is robust to the pandas >=3.0 change where
+            # Series.astype(str) no longer coerces NaN to the string "nan".
+            block = np.char.strip(df[self.allele_cols].to_numpy().astype(str))
         else:
-            stripped = np.empty((len(df), 0), dtype=object)
+            block = np.empty((len(df), 0), dtype=str)
 
         signatures = [
-            tuple(a for a in row if a and a.lower() != "nan") for row in stripped
+            tuple(a for a in row if a and a.lower() != "nan") for row in block
         ]
         return pd.Series(signatures, index=df.index, dtype=object)
 
