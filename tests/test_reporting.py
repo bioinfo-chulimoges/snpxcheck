@@ -11,25 +11,21 @@ from src.reporting.generator import ReportGenerator
 def sample_data():
     """Create sample data for report generation."""
     # Sample intra-comparison DataFrame
-    df_intra = pd.DataFrame(
-        {
-            "Patient": ["P1", "P1", "P2", "P2"],
-            "Sample Name": ["S1", "S2", "S3", "S4"],
-            "Genre": ["homme", "homme", "femme", "femme"],
-            "status_description": ["", "Warning", "Error", ""],
-            "status_type": ["success", "warning", "error", "success"],
-        }
-    )
+    df_intra = pd.DataFrame({
+        "Patient": ["P1", "P1", "P2", "P2"],
+        "Sample Name": ["S1", "S2", "S3", "S4"],
+        "Genre": ["homme", "homme", "femme", "femme"],
+        "status_description": ["", "Warning", "Error", ""],
+        "status_type": ["success", "warning", "error", "success"],
+    })
 
     # Sample inter-comparison DataFrame
-    df_inter = pd.DataFrame(
-        {
-            "Sample Name": ["S1", "S2", "S3", "S4"],
-            "1": ["C/T", "C/T", "C/C", "T/T"],
-            "2": ["A/G", "A/A", "G/G", "A/G"],
-            "3": ["T", "T/C", "C", "T/C"],
-        }
-    )
+    df_inter = pd.DataFrame({
+        "Sample Name": ["S1", "S2", "S3", "S4"],
+        "1": ["C/T", "C/T", "C/C", "T/T"],
+        "2": ["A/G", "A/A", "G/G", "A/G"],
+        "3": ["T", "T/C", "C", "T/C"],
+    })
 
     # Sample heatmap
     heatmap = go.Figure(
@@ -73,7 +69,6 @@ def report_generator():
 
 def test_generate_html_report(report_generator, sample_data, tmp_path):
     """Test generating the HTML report."""
-
     html_content = report_generator.generate_html_report(
         df_intra=sample_data["df_intra"],
         df_inter=sample_data["df_inter"],
