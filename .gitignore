@@ -37,9 +37,6 @@ docs/source/_static/versions.json
 # Logs
 *.log
 
-# Benchmark data (real genotypes — never commit) and pytest-benchmark storage
-.benchmarks/
-
 # IDE
 .vscode/
 .idea/
