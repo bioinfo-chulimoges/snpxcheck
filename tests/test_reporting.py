@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytest
 from pypdf import PdfReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from src.reporting.generator import ReportGenerator
 from src.version import VERSION
@@ -282,3 +283,78 @@ def test_report_tables_carry_their_css_classes(report_generator, sample_data):
     assert 'class="table table-intra"' in html_content
     assert 'class="table table-inter"' in html_content
     assert "col_heading" in html_content
+
+
+# Real GLIMS identifiers are far longer than the historical sample names.
+LONG_SAMPLE_NAMES = [
+    "26011830905-26T414a",
+    "26011830906-26T414a",
+    "26011831406-26T414a",
+]
+
+# Horizontal padding applied to every table cell by the stylesheet, in points.
+CELL_PADDING_PT = 3
+
+# Two text runs are considered to share a table row within this vertical slack.
+SAME_ROW_SLACK_PT = 2
+
+
+def _pdf_text_positions(pdf_path) -> list:
+    """Extract the page-space position of every text run of the first page.
+
+    Returns:
+        list: (text, x, y, font_size) tuples, x and y in points from the bottom
+            left corner of the page.
+    """
+    positions = []
+
+    def visit(text, cm, tm, font_dict, font_size):
+        stripped = text.strip()
+        if stripped:
+            positions.append((stripped, cm[4] + tm[4], cm[5] + tm[5], font_size))
+
+    PdfReader(str(pdf_path)).pages[0].extract_text(visitor_text=visit)
+    return positions
+
+
+def test_inter_table_sample_names_stay_inside_their_cell(
+    report_generator, sample_data, tmp_path
+):
+    """Long sample names do not spill over the sample-name column border.
+
+    xhtml2pdf neither wraps nor clips a table cell: a name wider than its column
+    is simply drawn on top of the next one.
+    """
+    df_inter = sample_data["df_inter"].copy()
+    df_inter["Sample Name"] = [*LONG_SAMPLE_NAMES, df_inter["Sample Name"].iloc[-1]]
+    pdf_path = tmp_path / "report.pdf"
+    report_generator.generate_pdf_report(
+        df_intra=sample_data["df_intra"],
+        df_inter=df_inter,
+        metadata=sample_data["metadata"],
+        errors_intra=sample_data["errors_intra"],
+        errors_inter=sample_data["errors_inter"],
+        output_path=str(pdf_path),
+    )
+
+    positions = _pdf_text_positions(pdf_path)
+    for name in LONG_SAMPLE_NAMES:
+        drawn = [item for item in positions if item[0] == name]
+        assert drawn, f"{name} is missing from the report"
+        for _, x, y, font_size in drawn:
+            right_edge = x + stringWidth(name, "Helvetica", font_size)
+            neighbours = sorted(
+                (
+                    item
+                    for item in positions
+                    if abs(item[2] - y) < SAME_ROW_SLACK_PT and item[1] > x + 1
+                ),
+                key=lambda item: item[1],
+            )
+            if not neighbours:
+                continue
+            # The column border sits one cell padding left of the next cell's text.
+            assert right_edge <= neighbours[0][1] - 2 * CELL_PADDING_PT, (
+                f"{name} overflows its cell by "
+                f"{right_edge - neighbours[0][1] + 2 * CELL_PADDING_PT:.1f}pt"
+            )

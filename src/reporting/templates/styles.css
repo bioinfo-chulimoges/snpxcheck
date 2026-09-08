@@ -45,9 +45,10 @@ h2 {
     margin: 10pt 0 5pt 0;
 }
 
+/* No rule of its own: the <hr> opening the metadata block already separates the
+   header from the body, and a second line reads as a duplicate. */
 h2.subtitle {
     text-align: center;
-    border-bottom: 0.5pt solid #ddd;
     padding-bottom: 6pt;
     margin: 0 0 8pt 0;
 }
@@ -95,10 +96,16 @@ table.metadata td {
 }
 
 /* === Status messages === */
+/* line-height is set explicitly: xhtml2pdf otherwise gives the box the body
+   leading, which drops the single line of text to the top of the padded box.
+   The padding is asymmetric so the line sits optically centred: reportlab
+   places the baseline one leading below the top of the box. */
 .error, .success {
     border: 0.5pt solid;
     margin: 6pt 0;
-    padding: 6pt 10pt;
+    padding: 5pt 10pt 3pt 10pt;
+    font-size: 10pt;
+    line-height: 10pt;
     font-weight: bold;
 }
 
@@ -128,14 +135,16 @@ table.table th {
     font-weight: bold;
 }
 
-/* Sample identifiers need more room than the single-letter allele columns.
-   xhtml2pdf spreads the width evenly otherwise, truncating the names. */
+/* Sample identifiers need more room than the single-letter allele columns:
+   xhtml2pdf spreads the width evenly otherwise, and it neither wraps nor clips a
+   cell, so a name wider than its column is drawn on top of the next one. The
+   widths below fit a GLIMS identifier such as 26011830905-26T414a at 7pt. */
 .table-intra .col0, .table-intra .col1 {
     width: 17%;
 }
 
 .table-inter .col0 {
-    width: 14%;
+    width: 18%;
 }
 
 .table-container {
