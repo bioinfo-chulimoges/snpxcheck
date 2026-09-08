@@ -31,7 +31,6 @@ Installation
 .. code-block:: bash
 
    pip install -r requirements.txt
-   apt install -r packages.txt
 
 4. Installez l'application :
 

@@ -1,230 +1,143 @@
-/* === Global style === */
-body {
-    font-family: Arial, sans-serif;
-    font-size: 10pt;
-    line-height: 1.4;
-    color: #333;
-    background: white;
-    margin: 20px;
+/* Stylesheet for the PDF report, rendered by xhtml2pdf.
+
+   xhtml2pdf only implements a subset of CSS. Notably it ignores border-collapse,
+   table-layout, page-break-inside, min/max-width, word-wrap and CSS variables, and
+   it does not support @page margin boxes (@bottom-left and friends) nor <colgroup>.
+   Page furniture therefore goes through @frame, and column widths through the
+   per-column classes emitted by the pandas Styler. */
+
+/* === Page layout === */
+@page {
+    size: a4 portrait;
+    margin: 1cm 1cm 1.5cm 1cm;
+
+    @frame footer_frame {
+        -pdf-frame-content: footerContent;
+        left: 28pt;
+        width: 539pt;
+        top: 800pt;
+        height: 30pt;
+    }
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 600;
-    margin-top: 0.8em;
-    margin-bottom: 0.5em;
+/* === Global style === */
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    color: #333;
+}
+
+h1, h2 {
+    font-weight: bold;
     color: #222;
 }
 
 h1 {
     font-size: 16pt;
-    border-bottom: 2px solid #333;
-    padding-bottom: 5px;
+    text-align: center;
+    border-bottom: 2pt solid #333;
+    padding-bottom: 3pt;
+    margin: 0 0 6pt 0;
 }
 
 h2 {
-    font-size: 14pt;
-    /* border-bottom: 1px solid #ddd; */
-    padding-bottom: 5px;
+    font-size: 13pt;
+    margin: 10pt 0 5pt 0;
 }
 
-p {
-    margin: 0.5em 0;
+h2.subtitle {
+    text-align: center;
+    border-bottom: 0.5pt solid #ddd;
+    padding-bottom: 6pt;
+    margin: 0 0 8pt 0;
 }
 
-hr {
-    border: 0;
-    height: 1px;
-    background: #ccc;
-    margin: 2em 0;
-}
-
-/* === Table style === */
-table {
+/* === Page footer === */
+table.page-footer {
     width: 100%;
-    border-collapse: collapse;
-    margin: 1em 0;
-    font-size: 10px;
+    font-size: 8pt;
+    color: #666;
 }
 
-thead {
-    background-color: #f5f5f5;
+table.page-footer td {
+    border: none;
+    padding: 0;
 }
 
-th, td {
-    border: 1px solid #ddd;
-    padding: 3px 6px;
-    text-align: left;
-}
-
-th {
-    font-weight: bold;
-    color: #111;
-}
-
-tr:nth-child(even) {
-    background-color: #fafafa;
-}
-
-tr:hover {
-    background-color: #f1f1f1;
-}
-
-/* === Image style === */
-img.heatmap {
-    display: block;
-    margin: 2em auto;
-    max-width: 90%;
-    height: auto;
-}
-
-/* === Page style for A4 === */
-@page {
-    size: A4;
-    margin: 0.5cm;
-    
-    @bottom-left {
-        content: "SNPXCheck - Identitovigilance - " var(--version);
-        font-size: 9px;
-        color: #666;
-    }
-    @bottom-center {
-        content: "Service de Biochimie - Génétique Moléculaire";
-        font-size: 9px;
-        color: #666;
-    }
-    @bottom-right {
-        content: "Page " counter(page) " / " counter(pages);
-        font-size: 9px;
-        color: #666;
-    }
-}
-
-header, footer {
-    font-size: 9px;
-    color: #888;
+.footer-center {
     text-align: center;
 }
 
-header {
-    margin-bottom: 1em;
+.footer-right {
+    text-align: right;
 }
 
-footer {
-    margin-top: 1em;
-    border-top: 1px solid #ccc;
-    padding-top: 5px;
+/* === Metadata block === */
+/* Rules are drawn with <hr>: xhtml2pdf replicates a table border on every row. */
+hr.rule {
+    background-color: #ddd;
+    height: 0.5pt;
+    margin: 3pt 0;
 }
 
-.text-center {
-    text-align: center;
+table.metadata {
+    width: 100%;
+    font-size: 9pt;
 }
 
-.info, .success, .warning, .error, .validation {
-    border: 1px solid;
-    margin: 10px 0px;
-    padding: 15px 10px 15px 50px;
-    background-repeat: no-repeat;
-    background-position: 10px center;
+table.metadata td {
+    border: none;
+    padding: 0.5pt 0;
 }
-.info {
-    color: #00529B;
-    background-color: #BDE5F8;
+
+.metadata-label {
+    width: 22%;
 }
-.success {
-    color: green;
+
+/* === Status messages === */
+.error, .success {
+    border: 0.5pt solid;
+    margin: 6pt 0;
+    padding: 6pt 10pt;
     font-weight: bold;
-    margin-bottom: 10px;
 }
-.warning {
-    color: #9F6000;
-    background-color: #FEEFB3;
-}
+
 .error {
     color: red;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-.validation{
-    color: #D63301;
-    background-color: #FFCCBA;
 }
 
-/* === Image style === */
-img.heatmap {
-    display: block;
-    margin: 2em auto;
-    max-width: 90%;
-    height: auto;
+.success {
+    color: green;
 }
 
-/* === Image style === */
-img.heatmap {
-    display: block;
-    margin: 2em auto;
-    max-width: 90%;
-    height: auto;
-}
-
-/* Table styles */
-.table {
+/* === Comparison tables === */
+table.table {
     width: 100%;
-    border-collapse: collapse;
     font-size: 7pt;
-    table-layout: auto;
+    margin: 0 0 8pt 0;
 }
 
-.table th, .table td {
-    padding: 2px;
-    border: 1px solid #ddd;
+table.table th, table.table td {
+    border: 0.5pt solid #ddd;
+    padding: 1.5pt 3pt;
     text-align: left;
-    word-wrap: break-word;
 }
 
-.table th {
+table.table th {
     background-color: #f2f2f2;
     font-weight: bold;
 }
 
-/* Specific column widths */
-.table th:nth-child(1), .table td:nth-child(1) {  /* Patient */
-    width: 10%;
+/* Sample identifiers need more room than the single-letter allele columns.
+   xhtml2pdf spreads the width evenly otherwise, truncating the names. */
+.table-intra .col0, .table-intra .col1 {
+    width: 17%;
 }
 
-
-/* Locus columns */
-.table th[colspan], .table td[colspan] {
-    width: auto;
-    min-width: 5%;
+.table-inter .col0 {
+    width: 14%;
 }
 
-/* Container styles */
 .table-container {
     width: 100%;
-    overflow-x: auto;
-    margin-bottom: 20px;
-    page-break-inside: avoid;
-}
-
-/* Metadata styles */
-.metadata {
-    font-size: 9pt;
-    padding: 5px 0;
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-}
-
-.metadata p {
-    margin: 2px 0;
-}
-
-/* Heatmap styles */
-.heatmap-container {
-    text-align: center;
-    margin: 20px 0;
-    page-break-inside: avoid;
-}
-
-.heatmap-container img {
-    max-width: 100%;
-    height: auto;
 }

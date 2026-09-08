@@ -1,5 +1,3 @@
-import warnings
-
 import pandas as pd
 import pytest
 
@@ -11,9 +9,6 @@ from main import (
     render_intra_comparison,
 )
 from src.utils.models import ComparisonResult, Metadata, SessionState
-
-# Ignore the setDaemon deprecation warning from kaleido
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="kaleido")
 
 
 @pytest.fixture
