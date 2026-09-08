@@ -37,9 +37,6 @@ SNPXCheck est une application web qui permet d'analyser et de comparer des donn√
    ```bash
    pip install -r requirements.txt
    ```
-   ```bash
-   apt install -r packages.txt
-   ```
 
 4. Installez l'application :
    ```bash

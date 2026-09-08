@@ -3,34 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <title>Rapport identitovigilance</title>
-    <link rel="stylesheet" href="templates/styles.css" />
     <style>
-      :root {
-        --version: "{{ version }}";
-      }
+      {{ styles }}
     </style>
   </head>
 
   <body>
-    <div class="text-center">
-      <h1>Rapport identitovigilance</h1>
-      <h2>Service de Biochimie - Génétique Moléculaire</h2>
+    <div id="footerContent">
+      <table class="page-footer">
+        <tr>
+          <td class="footer-left">
+            SNPXCheck - Identitovigilance - {{ version }}
+          </td>
+          <td class="footer-center">
+            Service de Biochimie - Génétique Moléculaire
+          </td>
+          <td class="footer-right">
+            Page <pdf:pagenumber> / <pdf:pagecount>
+          </td>
+        </tr>
+      </table>
     </div>
 
-    <div class="metadata">
-      <p><strong>Date :</strong> {{ date }}</p>
-      <p><strong>Fichier :</strong> {{ filename }}</p>
-      <p><strong>Interprétateur :</strong> {{ interpreter }}</p>
-      <p><strong>Semaine d'extraction :</strong> {{ week }}</p>
-      <p><strong>Série conforme :</strong> {{ serie }}</p>
-      <p><strong>Commentaire :</strong> {{ comment }}</p>
-      <p><strong>Série validée :</strong> Oui&nbsp;&nbsp;&nbsp;&nbsp;Non</p>
-    </div>
+    <h1>Rapport identitovigilance</h1>
+    <h2 class="subtitle">Service de Biochimie - Génétique Moléculaire</h2>
+
+    <hr class="rule" />
+    <table class="metadata">
+      <tr>
+        <td class="metadata-label"><strong>Date :</strong></td>
+        <td>{{ date }}</td>
+      </tr>
+      <tr>
+        <td class="metadata-label"><strong>Fichier :</strong></td>
+        <td>{{ filename }}</td>
+      </tr>
+      <tr>
+        <td class="metadata-label"><strong>Interprétateur :</strong></td>
+        <td>{{ interpreter }}</td>
+      </tr>
+      <tr>
+        <td class="metadata-label"><strong>Semaine d'extraction :</strong></td>
+        <td>{{ week }}</td>
+      </tr>
+      <tr>
+        <td class="metadata-label"><strong>Série conforme :</strong></td>
+        <td>{{ serie }}</td>
+      </tr>
+      <tr>
+        <td class="metadata-label"><strong>Commentaire :</strong></td>
+        <td>{{ comment }}</td>
+      </tr>
+      <tr>
+        <td class="metadata-label"><strong>Série validée :</strong></td>
+        <td>Oui&nbsp;&nbsp;&nbsp;&nbsp;Non</td>
+      </tr>
+    </table>
+    <hr class="rule" />
 
     <h2>Comparaison Intra-Patients</h2>
     {% if errors_intra > 0 %}
     <div class="error">
-      Erreur : {{errors_intra}} échantillon(s) incohérent(s) détecté(s).
+      Erreur : {{ errors_intra }} échantillon(s) incohérent(s) détecté(s).
     </div>
     {% else %}
     <div class="success">Tous les échantillons sont cohérents.</div>
