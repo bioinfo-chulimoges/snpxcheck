@@ -4,6 +4,10 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 
 ## [Unreleased]
 
+nothing
+
+[1.3.0] - 2026-09-08
+
 ## Changed
 
 - Remplacement de WeasyPrint par xhtml2pdf pour la génération du rapport PDF : plus
