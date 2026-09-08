@@ -1,26 +1,30 @@
 """Report generation module.
 
 This module handles the generation of HTML and PDF reports from analysis results,
-including heatmap visualization and comparison data.
+including the intra- and inter-patient comparison tables.
 """
 
-import os
-import tempfile
-from typing import Optional
 import html
+import io
+import os
+from typing import Union
+
 import pandas as pd
-import plotly
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import CSS, HTML
+from pandas.io.formats.style import Styler
+from xhtml2pdf import pisa
 
 from src.version import VERSION
+
+Table = Union[pd.DataFrame, Styler]
 
 
 class ReportGenerator:
     """Class responsible for generating analysis reports.
 
-    This class provides methods for creating HTML and PDF reports from analysis results,
-    including heatmap visualization and comparison data.
+    This class provides methods for creating HTML and PDF reports from analysis
+    results. PDF rendering relies on xhtml2pdf, a pure-Python engine, so that the
+    application needs no system libraries at runtime.
 
     Attributes:
         env (Environment): Jinja2 template environment.
@@ -37,38 +41,70 @@ class ReportGenerator:
         self.env = Environment(loader=FileSystemLoader(template_dir))
         self.template_dir = template_dir
 
-    def generate_html_report(  # noqa: PLR0913
+    def _read_stylesheet(self) -> str:
+        """Read the report stylesheet.
+
+        The stylesheet is inlined in the generated document rather than linked:
+        xhtml2pdf silently ignores a stylesheet it cannot load, which would yield a
+        valid but completely unstyled report.
+
+        Returns:
+            str: Content of the stylesheet.
+        """
+        css_path = os.path.join(self.template_dir, "styles.css")
+        with open(css_path, encoding="utf-8") as css_file:
+            return css_file.read()
+
+    @staticmethod
+    def _render_table(table: Table, css_class: str) -> str:
+        """Render a comparison table as HTML.
+
+        Tables are rendered through the pandas Styler so that every cell carries the
+        per-column classes the stylesheet needs: xhtml2pdf ignores <colgroup>, and
+        distributes the width evenly across columns without them.
+
+        Args:
+            table (Table): DataFrame or Styler holding the comparison data.
+            css_class (str): Additional class identifying the table.
+
+        Returns:
+            str: HTML markup of the table.
+        """
+        styler = table if isinstance(table, Styler) else table.style.hide(axis="index")
+        return styler.set_table_attributes(f'class="table {css_class}"').to_html()
+
+    def generate_html_report(
         self,
-        df_intra: pd.DataFrame,
-        df_inter: pd.DataFrame,
+        df_intra: Table,
+        df_inter: Table,
         metadata: dict,
         errors_intra: int,
         errors_inter: int,
     ) -> str:
-        """Generate a HTML report using jinja2 template.
+        """Generate a self-contained HTML report using jinja2 template.
 
         Args:
-            df_intra (pd.DataFrame): DataFrame containing intra-patient comparison.
-            df_inter (pd.DataFrame): DataFrame containing inter-patient comparison.
-            fig_path (str): Path to the heatmap image.
+            df_intra (Table): Intra-patient comparison table.
+            df_inter (Table): Inter-patient comparison table.
             metadata (dict): Dictionary containing report metadata.
             errors_intra (int): Number of intra-patient errors.
             errors_inter (int): Number of inter-patient errors.
 
         Returns:
-            str: Generated HTML content.
+            str: Generated HTML content, stylesheet included.
         """
         template = self.env.get_template("report_template.html")
 
         return template.render(
+            styles=self._read_stylesheet(),
             date=metadata.get("date", ""),
             filename=metadata.get("filename", ""),
             interpreter=metadata.get("interpreter", ""),
             week=metadata.get("week", ""),
             serie=metadata.get("serie", ""),
-            comment=html.escape(metadata.get("comment", "")).replace('\n', '<br>'),
-            df_intra=df_intra.to_html(classes="table"),
-            df_inter=df_inter.to_html(classes="table", index=False),
+            comment=html.escape(metadata.get("comment", "")).replace("\n", "<br>"),
+            df_intra=self._render_table(df_intra, "table-intra"),
+            df_inter=self._render_table(df_inter, "table-inter"),
             errors_intra=errors_intra,
             errors_inter=errors_inter,
             version=VERSION,
@@ -78,16 +114,34 @@ class ReportGenerator:
         """Convert the HTML content to a PDF file.
 
         Args:
-            html_content (str): HTML content to convert.
+            html_content (str): Self-contained HTML content to convert.
             output_path (str): Path where to save the PDF file.
+
+        Raises:
+            RuntimeError: If the document cannot be rendered. The destination file
+                is left untouched in that case.
         """
-        css_path = os.path.join(self.template_dir, "styles.css")
-        HTML(string=html_content).write_pdf(output_path, stylesheets=[CSS(css_path)])
+        buffer = io.BytesIO()
+        try:
+            status = pisa.CreatePDF(src=html_content, dest=buffer, encoding="utf-8")
+        except Exception as exc:
+            raise RuntimeError(
+                f"Could not render the PDF report to {output_path}"
+            ) from exc
+
+        if status.err:
+            raise RuntimeError(
+                f"Could not render the PDF report to {output_path}: "
+                f"{status.err} error(s)"
+            )
+
+        with open(output_path, "wb") as pdf_file:
+            pdf_file.write(buffer.getvalue())
 
     def generate_pdf_report(  # noqa: PLR0913
         self,
-        df_intra: pd.DataFrame,
-        df_inter: pd.DataFrame,
+        df_intra: Table,
+        df_inter: Table,
         metadata: dict,
         errors_intra: int,
         errors_inter: int,
@@ -96,18 +150,18 @@ class ReportGenerator:
         """Generate a PDF report from the data.
 
         Args:
-            df_intra (pd.DataFrame): DataFrame containing intra-patient comparison.
-            df_inter (pd.DataFrame): DataFrame containing inter-patient comparison.
+            df_intra (Table): Intra-patient comparison table.
+            df_inter (Table): Inter-patient comparison table.
             metadata (dict): Dictionary containing report metadata.
             errors_intra (int): Number of intra-patient errors.
             errors_inter (int): Number of inter-patient errors.
             output_path (str): Path where to save the PDF file.
         """
-        html = self.generate_html_report(
+        html_content = self.generate_html_report(
             df_intra,
             df_inter,
             metadata,
             errors_intra,
             errors_inter,
         )
-        self.save_pdf_from_html(html, output_path)
+        self.save_pdf_from_html(html_content, output_path)

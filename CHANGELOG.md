@@ -2,6 +2,23 @@
 
 Tous les changements notables de ce projet seront documentés dans ce fichier.
 
+## [Unreleased]
+
+nothing
+
+[1.3.0] - 2026-09-08
+
+## Changed
+
+- Remplacement de WeasyPrint par xhtml2pdf pour la génération du rapport PDF : plus
+  aucune dépendance système, l'application se déploie sur Streamlit Community Cloud
+  sans `packages.txt`
+
+## Removed
+
+- Fichier `packages.txt` et ses dépendances apt (Cairo, Pango, gdk-pixbuf)
+- Dépendance `kaleido`, inutilisée
+
 ## [1.2.0] - 2026-06-03
 
 ## Added
