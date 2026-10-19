@@ -4,7 +4,17 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 
 ## [Unreleased]
 
-nothing
+## Fixed
+
+- Le tableau "Intra-patients" du rapport PDF n'était plus complet sur Streamlit
+  Community Cloud : les lignes au-delà de la
+  première page étaient réduites à une taille illisible au lieu de continuer sur les
+  pages suivantes
+
+## Changed
+
+- Versions des dépendances figées dans `requirements.txt` pour que Streamlit
+  Community Cloud et la CI installent les mêmes versions que l'environnement local
 
 [1.3.0] - 2026-09-08
 
