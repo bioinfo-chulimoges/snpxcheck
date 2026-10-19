@@ -7,7 +7,7 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 ## Fixed
 
 - Le tableau "Intra-patients" du rapport PDF n'était plus complet sur Streamlit
-  Community Cloud : avec xhtml2pdf 0.2.25 et suivants, les lignes au-delà de la
+  Community Cloud : les lignes au-delà de la
   première page étaient réduites à une taille illisible au lieu de continuer sur les
   pages suivantes
 
