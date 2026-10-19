@@ -147,6 +147,6 @@ table.table th {
     width: 18%;
 }
 
-.table-container {
-    width: 100%;
-}
+/* .table-container deliberately declares no width: a block already spans the
+   page, and from xhtml2pdf 0.2.25 a block of declared width shrinks what is left
+   of a long table into the bottom of the page instead of carrying it over. */

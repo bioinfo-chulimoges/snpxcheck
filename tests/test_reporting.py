@@ -10,10 +10,9 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from src.reporting.generator import ReportGenerator
 from src.version import VERSION
 
-# xhtml2pdf does not implement @page margin boxes: parsing this document fails.
+# This document switches to a page template it never defines: xhtml2pdf aborts.
 UNRENDERABLE_DOCUMENT = (
-    '<html><head><style>@page { @bottom-left { content: "x"; } }</style>'
-    "</head><body><p>report</p></body></html>"
+    '<html><body><pdf:nexttemplate name="undefined"/><p>report</p></body></html>'
 )
 
 
@@ -358,3 +357,63 @@ def test_inter_table_sample_names_stay_inside_their_cell(
                 f"{name} overflows its cell by "
                 f"{right_edge - neighbours[0][1] + 2 * CELL_PADDING_PT:.1f}pt"
             )
+
+
+# Font size of the comparison tables set by the stylesheet, in points.
+TABLE_FONT_SIZE_PT = 7
+
+
+def _pdf_drawn_font_sizes(pdf_path) -> dict:
+    """Map every text run of the PDF to the font sizes it is drawn at on the page.
+
+    The size accounts for the canvas scaling, so text that the PDF engine shrank
+    to squeeze it into a page reports its actual, possibly illegible, size.
+    """
+    sizes = {}
+
+    def visit(text, cm, tm, font_dict, font_size):
+        stripped = text.strip()
+        if stripped:
+            drawn = round(font_size * tm[3] * cm[3], 2)
+            sizes.setdefault(stripped, []).append(drawn)
+
+    for page in PdfReader(str(pdf_path)).pages:
+        page.extract_text(visitor_text=visit)
+    return sizes
+
+
+def test_long_intra_table_flows_over_pages_at_full_size(
+    report_generator, sample_data, tmp_path
+):
+    """An intra table longer than a page continues on the next pages, legibly.
+
+    xhtml2pdf 0.2.25 and later shrink what is left of a table into the bottom of
+    the page when it sits in a block of declared width, instead of carrying it
+    over to the next page: those rows end up drawn a few hundredths of a point
+    tall, invisible in the report.
+    """
+    sample_names = [f"260231{i:03d}05-26T{i:03d}a" for i in range(120)]
+    df_intra = pd.DataFrame(
+        {
+            "Patient": [name[:9] for name in sample_names],
+            "Sample Name": sample_names,
+            "Genre": "femme",
+            "status_description": "",
+            "status_type": "success",
+        }
+    )
+    pdf_path = tmp_path / "report.pdf"
+    report_generator.generate_pdf_report(
+        df_intra=df_intra,
+        df_inter=sample_data["df_inter"],
+        metadata=sample_data["metadata"],
+        errors_intra=sample_data["errors_intra"],
+        errors_inter=sample_data["errors_inter"],
+        output_path=str(pdf_path),
+    )
+
+    sizes = _pdf_drawn_font_sizes(pdf_path)
+    for name in sample_names:
+        assert sizes.get(name) == [TABLE_FONT_SIZE_PT], (
+            f"{name} is drawn at {sizes.get(name)}pt"
+        )
